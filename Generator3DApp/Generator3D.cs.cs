@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Generator3D
 {
-    public struct Vector3Int
+    public struct Vector3Int : IEquatable<Vector3Int>
     {
         public int x, y, z;
 
@@ -21,16 +21,29 @@ namespace Generator3D
             return new Vector3Int(a.x + b.x, a.y + b.y, a.z + b.z);
         }
 
+        public bool Equals(Vector3Int other)
+        {
+            return x == other.x && y == other.y && z == other.z;
+        }
+
         public override bool Equals(object obj)
         {
-            return obj is Vector3Int other && x == other.x && y == other.y && z == other.z;
+            return obj is Vector3Int other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(x, y, z);
+            unchecked // Overflow is fine
+            {
+                int hash = 17;
+                hash = hash * 31 + x;
+                hash = hash * 31 + y;
+                hash = hash * 31 + z;
+                return hash;
+            }
         }
     }
+
 
     public class Program
     {
