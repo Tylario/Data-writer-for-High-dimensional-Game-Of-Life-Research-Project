@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Generator2D
 {
-    public struct Vector2Int
+    public struct Vector2Int : IEquatable<Vector2Int>
     {
         public int x, y;
 
@@ -18,6 +20,27 @@ namespace Generator2D
         public static Vector2Int operator +(Vector2Int a, Vector2Int b)
         {
             return new Vector2Int(a.x + b.x, a.y + b.y);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Vector2Int other && Equals(other);
+        }
+
+        public bool Equals(Vector2Int other)
+        {
+            return x == other.x && y == other.y;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked // Allow overflow
+            {
+                int hash = 17;
+                hash = hash * 31 + x;
+                hash = hash * 31 + y;
+                return hash;
+            }
         }
     }
 
@@ -41,15 +64,16 @@ namespace Generator2D
                         {
                             case "numFrames": generator.numFrames = int.Parse(value); break;
                             case "kernelRadius": generator.kernelRadius = int.Parse(value); break;
+                            case "kernelSigmaMultiplier": generator.kernelSigmaMultiplier = float.Parse(value); break;
+                            case "growthSigmaMultiplier": generator.growthSigmaMultiplier = float.Parse(value); break;
                             case "startingAreaSize": generator.startingAreaSize = int.Parse(value); break;
                             case "minInitialValue": generator.minInitialValue = float.Parse(value); break;
                             case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
                             case "cellSpawnChance": generator.cellSpawnChance = float.Parse(value); break;
                             case "deltaT": generator.deltaT = float.Parse(value); break;
                             case "center": generator.center = float.Parse(value); break;
-                            case "sigma": generator.sigma = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
-                            default: Console.WriteLine($"Unknown parameter: {param}"); break;
+                                default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
                 }
@@ -69,13 +93,17 @@ namespace Generator2D
         public float cellSpawnChance = 0.4f;
         public float deltaT = 0.1f;
         public float center = 0.15f;
-        public float sigma = 0.012f;
+        public float kernelSigmaMultiplier = 0.125f;
+        public float growthSigmaMultiplier = 0.125f;
         public string outputDirectory = "LeniaData2D";
 
         private Dictionary<Vector2Int, float> aliveCells = new Dictionary<Vector2Int, float>();
         private List<Vector2Int> kernelOffsets = new List<Vector2Int>();
         private float[] kernelValues;
         private Random random = new Random();
+
+        private float kernelSigma;
+        private float growthSigma;
 
         public class FrameData
         {
@@ -91,6 +119,10 @@ namespace Generator2D
 
         public void Run()
         {
+            // Calculate kernel and growth sigmas
+            kernelSigma = kernelRadius * kernelSigmaMultiplier;
+            growthSigma = kernelRadius * growthSigmaMultiplier;
+
             InitializeKernel();
             InitializeGame();
             PrecomputeFrames();
@@ -100,7 +132,6 @@ namespace Generator2D
         {
             List<float> kernelValueList = new List<float>();
             float r0 = kernelRadius / 2.0f;
-            float sigmaK = kernelRadius / 4.0f;
             float sum = 0.0f;
 
             for (int i = -kernelRadius; i <= kernelRadius; i++)
@@ -108,7 +139,8 @@ namespace Generator2D
                 for (int j = -kernelRadius; j <= kernelRadius; j++)
                 {
                     float r = (float)Math.Sqrt(i * i + j * j);
-                    float value = (float)Math.Exp(-((r - r0) * (r - r0)) / (2 * sigmaK * sigmaK));
+                    float exponent = -((r - r0) * (r - r0)) / (2 * kernelSigma * kernelSigma);
+                    float value = (float)Math.Exp(exponent);
                     kernelOffsets.Add(new Vector2Int(i, j));
                     kernelValueList.Add(value);
                     sum += value;
@@ -194,21 +226,33 @@ namespace Generator2D
 
         public void NextGeneration()
         {
-            Dictionary<Vector2Int, float> newAliveCells = new Dictionary<Vector2Int, float>();
-            HashSet<Vector2Int> positionsToUpdate = new HashSet<Vector2Int>();
+            var convolutionValues = new ConcurrentDictionary<Vector2Int, float>();
 
-            // Collect positions to update
-            foreach (var cellPos in aliveCells.Keys)
+            // Compute convolution values by scattering contributions from alive cells
+            Parallel.ForEach(aliveCells, aliveCellKvp =>
             {
-                foreach (var offset in kernelOffsets)
+                var aliveCellPos = aliveCellKvp.Key;
+                var aliveCellValue = aliveCellKvp.Value;
+
+                for (int idx = 0; idx < kernelOffsets.Count; idx++)
                 {
-                    positionsToUpdate.Add(cellPos + offset);
-                }
-            }
+                    Vector2Int neighborPos = aliveCellPos + kernelOffsets[idx];
+                    float kernelValue = kernelValues[idx];
+                    float contribution = aliveCellValue * kernelValue;
 
-            foreach (var position in positionsToUpdate)
+                    // Update convolution value atomically
+                    convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
+                }
+            });
+
+            var newAliveCells = new ConcurrentDictionary<Vector2Int, float>();
+
+            // Compute new cell values based on convolution values
+            Parallel.ForEach(convolutionValues, convolutionKvp =>
             {
-                float convolutionValue = CalculateConvolution(position);
+                Vector2Int position = convolutionKvp.Key;
+                float convolutionValue = convolutionKvp.Value;
+
                 float growth = GrowthFunction(convolutionValue);
 
                 float currentValue = aliveCells.TryGetValue(position, out float value) ? value : 0f;
@@ -218,30 +262,14 @@ namespace Generator2D
                 {
                     newAliveCells[position] = newValue;
                 }
-            }
+            });
 
-            aliveCells = newAliveCells;
-        }
-
-        private float CalculateConvolution(Vector2Int position)
-        {
-            float sum = 0f;
-
-            for (int idx = 0; idx < kernelOffsets.Count; idx++)
-            {
-                Vector2Int neighborPos = position + kernelOffsets[idx];
-                if (aliveCells.TryGetValue(neighborPos, out float neighborValue))
-                {
-                    sum += neighborValue * kernelValues[idx];
-                }
-            }
-
-            return sum;
+            aliveCells = new Dictionary<Vector2Int, float>(newAliveCells);
         }
 
         float GrowthFunction(float x)
         {
-            float exponent = -((x - center) * (x - center)) / (2 * sigma * sigma);
+            float exponent = -((x - center) * (x - center)) / (2 * growthSigma * growthSigma);
             return (float)Math.Exp(exponent);
         }
 

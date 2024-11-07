@@ -21,9 +21,9 @@ C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Pr
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.AssemblyInfoInputs.cache
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.AssemblyInfo.cs
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.csproj.CoreCompileInputs.cache
+C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.sourcelink.json
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.dll
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\refint\GeneratorManagerApp.dll
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.pdb
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.genruntimeconfig.cache
 C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\ref\GeneratorManagerApp.dll
-C:\Users\Tyler\Desktop\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\GeneratorManagerApp\obj\Debug\net8.0\GeneratorManagerApp.sourcelink.json

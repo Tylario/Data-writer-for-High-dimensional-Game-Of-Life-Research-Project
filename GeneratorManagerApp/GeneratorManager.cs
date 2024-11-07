@@ -31,14 +31,15 @@ public class GeneratorManager
         simulations.Add(new Simulation
         {
             GeneratorPath = generator2DPath,
-            Arguments = "--numFrames 40 " +
-                        "--kernelRadius 16 " +
-                        "--sigma 0.0125 " +
+            Arguments = "--numFrames 20 " +
+                        "--kernelRadius 10 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
                         "--center 0.15 " +
-                        "--deltaT 0.1 " +
-                        "--startingAreaSize 40 " +
-                        "--cellSpawnChance 0.5 " +
-                        "--minInitialValue 0.1 " +
+                        "--deltaT 0.1 " + 
+                        "--startingAreaSize 30 " +
+                        "--cellSpawnChance 0.75 " +
+                        "--minInitialValue 0.4 " +
                         "--maxInitialValue 1.0 " +
                         "--outputDirectory Output2D_Simulation"
         });
