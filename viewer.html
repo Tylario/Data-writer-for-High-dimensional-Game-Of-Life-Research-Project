@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lenia 2D Viewer</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #333;
+            margin: 20px;
+            max-width: 100%;
+            height: auto;
+        }
+        .controls {
+            margin: 20px;
+        }
+        input[type="file"] {
+            margin: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+        }
+        .spritesheet-controls {
+            margin-top: 10px;
+        }
+        
+        .spritesheet-controls input[type="number"] {
+            width: 60px;
+            margin: 0 10px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+</head>
+<body>
+    <h1>Lenia 2D Viewer</h1>
+    <div class="controls">
+        <input type="file" id="fileInput" multiple accept=".json">
+        <button id="playButton">Play</button>
+        <button id="pauseButton">Pause</button>
+        <button id="downloadButton">Download Current Frame</button>
+        <div class="spritesheet-controls">
+            <label>Pixel Size (px): <input type="number" id="cellSizeInput" value="4" min="1" max="32"></label>
+            <label>Scale Factor: <input type="number" id="scaleInput" value="1" min="1" max="8"></label>
+            <button id="downloadSpritesheet">Download Spritesheet</button>
+        </div>
+    </div>
+    <canvas id="leniaCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('leniaCanvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const playButton = document.getElementById('playButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const downloadSpritesheet = document.getElementById('downloadSpritesheet');
+        const cellSizeInput = document.getElementById('cellSizeInput');
+        const scaleInput = document.getElementById('scaleInput');
+        const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progressText');
+
+        // Updated Configuration
+        const baseSize = 800;
+        const scale = Math.floor(1080 / baseSize); // This will be 1.35, rounded down to 1
+        const canvasSize = baseSize * scale; // 800 * 1 = 800
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        
+        let frames = [];
+        let currentFrame = 0;
+        let isPlaying = false;
+        let animationId = null;
+
+        // Calculate viewport bounds for centering
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        fileInput.addEventListener('change', async (e) => {
+            frames = [];
+            const files = Array.from(e.target.files).sort((a, b) => {
+                // Sort files by frame number
+                const numA = parseInt(a.name.match(/\d+/)[0]);
+                const numB = parseInt(b.name.match(/\d+/)[0]);
+                return numA - numB;
+            });
+
+            // Load all files
+            for (const file of files) {
+                const text = await file.text();
+                const frameData = JSON.parse(text);
+                frames.push(frameData);
+
+                // Update bounds
+                frameData.cells.forEach(cell => {
+                    minX = Math.min(minX, cell.x);
+                    maxX = Math.max(maxX, cell.x);
+                    minY = Math.min(minY, cell.y);
+                    maxY = Math.max(maxY, cell.y);
+                });
+            }
+
+            console.log(`Loaded ${frames.length} frames`);
+            currentFrame = 0;
+            drawFrame(currentFrame);
+        });
+
+        function drawFrame(frameIndex) {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const frame = frames[frameIndex];
+            if (!frame) return;
+
+            // Calculate scale and offset to center the visualization
+            const width = maxX - minX;
+            const height = maxY - minY;
+            const scale = Math.min(
+                (canvas.width * 0.9) / width,
+                (canvas.height * 0.9) / height
+            );
+            
+            const offsetX = Math.floor(canvas.width/2 - ((maxX + minX)/2 * scale));
+            const offsetY = Math.floor(canvas.height/2 - ((maxY + minY)/2 * scale));
+
+            // Disable image smoothing
+            ctx.imageSmoothingEnabled = false;
+
+            // Draw cells
+            frame.cells.forEach(cell => {
+                const x = Math.floor(cell.x * scale + offsetX);
+                const y = Math.floor(cell.y * scale + offsetY);
+                const cellSize = Math.floor(scale);
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
+                ctx.fillRect(x, y, cellSize, cellSize);
+            });
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            
+            drawFrame(currentFrame);
+            currentFrame = (currentFrame + 1) % frames.length;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        playButton.addEventListener('click', () => {
+            if (!frames.length) return;
+            isPlaying = true;
+            animate();
+        });
+
+        pauseButton.addEventListener('click', () => {
+            isPlaying = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+
+        // Add download functionality
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `frame-${currentFrame}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        downloadSpritesheet.addEventListener('click', () => {
+            if (!frames.length) return;
+
+            const cellSize = parseInt(cellSizeInput.value);
+            const scaleFactor = parseInt(scaleInput.value);
+            
+            console.log('Cell Size:', cellSize);
+            console.log('Scale Factor:', scaleFactor);
+            const framesPerRow = Math.ceil(Math.sqrt(frames.length));
+            
+            // Create a new canvas for the spritesheet
+            const spritesheetCanvas = document.createElement('canvas');
+            const spritesheetCtx = spritesheetCanvas.getContext('2d');
+            
+            // Calculate dimensions for each sprite
+            const spriteWidth = (maxX - minX + 1) * cellSize * scaleFactor;
+            const spriteHeight = (maxY - minY + 1) * cellSize * scaleFactor;
+            
+            console.log('Sprite dimensions:', spriteWidth, 'x', spriteHeight);
+            console.log('Bounds:', minX, maxX, minY, maxY);
+            
+            // Set spritesheet dimensions
+            spritesheetCanvas.width = spriteWidth * framesPerRow;
+            spritesheetCanvas.height = spriteHeight * Math.ceil(frames.length / framesPerRow);
+            
+            console.log('Spritesheet dimensions:', spritesheetCanvas.width, 'x', spritesheetCanvas.height);
+            
+            // Fill background
+            spritesheetCtx.fillStyle = 'black';
+            spritesheetCtx.fillRect(0, 0, spritesheetCanvas.width, spritesheetCanvas.height);
+            
+            // Draw each frame
+            frames.forEach((frame, index) => {
+                const row = Math.floor(index / framesPerRow);
+                const col = index % framesPerRow;
+                
+                // Calculate position for this sprite
+                const xOffset = col * spriteWidth;
+                const yOffset = row * spriteHeight;
+                
+                // Draw cells for this frame
+                frame.cells.forEach(cell => {
+                    const x = xOffset + (cell.x - minX) * cellSize * scaleFactor;
+                    const y = yOffset + (cell.y - minY) * cellSize * scaleFactor;
+                    
+                    spritesheetCtx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
+                    spritesheetCtx.fillRect(
+                        Math.floor(x), 
+                        Math.floor(y), 
+                        Math.ceil(cellSize * scaleFactor), 
+                        Math.ceil(cellSize * scaleFactor)
+                    );
+                });
+            });
+            
+            // Alert user of dimensions
+            alert(`Spritesheet dimensions: ${spritesheetCanvas.width}x${spritesheetCanvas.height} pixels\n` +
+                  `Individual sprites: ${spriteWidth}x${spriteHeight} pixels\n` +
+                  `Total frames: ${frames.length}`);
+            
+            // Download the spritesheet
+            const link = document.createElement('a');
+            link.download = 'lenia-spritesheet.png';
+            link.href = spritesheetCanvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
