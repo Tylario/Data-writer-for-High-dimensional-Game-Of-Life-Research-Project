@@ -8,19 +8,19 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Tyler\\.nuget\\packages\\": {}
+    "C:\\Users\\thudso27\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\GeneratorManagerApp.csproj",
+      "projectUniqueName": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\GeneratorManagerApp.csproj",
       "projectName": "GeneratorManagerApp",
-      "projectPath": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\GeneratorManagerApp.csproj",
-      "packagesPath": "C:\\Users\\Tyler\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\obj\\",
+      "projectPath": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\GeneratorManagerApp.csproj",
+      "packagesPath": "C:\\Users\\thudso27\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\GeneratorManagerApp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Tyler\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\thudso27\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -38,7 +38,13 @@
         "warnAsError": [
           "NU1605"
         ]
-      }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "all"
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -59,7 +65,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

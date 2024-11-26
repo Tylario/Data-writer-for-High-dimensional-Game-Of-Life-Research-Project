@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace Generator4D
 {
@@ -95,6 +96,9 @@ namespace Generator4D
                             case "outputDirectory":
                                 generator.outputDirectory = value;
                                 break;
+                            case "maxFrameTimeSeconds":
+                                generator.maxFrameTimeSeconds = float.Parse(value);
+                                break;
                             default:
                                 Console.WriteLine($"Unknown parameter: {param}");
                                 break;
@@ -129,6 +133,7 @@ namespace Generator4D
         public float minInitialValue = 0.1f;
         public float maxInitialValue = 1.0f;
         public string outputDirectory = "LeniaData4D"; // Directory name where the generated frame data will be saved
+        public float maxFrameTimeSeconds = 1500.0f;
 
         private float kernelSigma = 0;
         private float growthSigma = 0;
@@ -237,14 +242,32 @@ namespace Generator4D
                 Directory.CreateDirectory(fullOutputPath);
             }
 
+            var sw = new Stopwatch();
+            var totalSw = new Stopwatch();
+            totalSw.Start();
+
             for (int i = 0; i < numFrames; i++)
             {
+                sw.Restart();
+                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
-                Console.WriteLine($"Frame {i + 1} computed.");
+                
+                sw.Stop();
+                
+                // Check if frame took too long
+                if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
+                {
+                    Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
+                    Console.WriteLine("Ending simulation early.");
+                    return;
+                }
+
+                Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            Console.WriteLine("Precomputing done.");
+            totalSw.Stop();
+            Console.WriteLine($"4D Lenia simulation precomputing completed in {totalSw.Elapsed.TotalMinutes:F2} minutes.");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)

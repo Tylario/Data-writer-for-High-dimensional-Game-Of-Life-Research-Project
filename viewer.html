@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lenia 2D Viewer</title>
+    <title>Simulation Viewer</title>
     <style>
         body {
             display: flex;
@@ -23,7 +23,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: none;
         }
         canvas {
             border: none;
@@ -40,6 +39,9 @@
             flex-direction: column;
             gap: 10px;
             min-width: 120px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
         }
         input[type="file"] {
             color: white;
@@ -56,15 +58,24 @@
         }
         button:hover {
             background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
         }
-        button:active {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(1px);
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .frame-nav {
+            display: flex;
+            gap: 4px;
+            display: none;
+        }
+        .frame-nav button {
+            flex: 1;
+            padding: 8px 8px;
         }
         .toggle-container {
             display: flex;
             align-items: center;
+            display: none;
         }
         .toggle {
             display: flex;
@@ -72,22 +83,55 @@
             gap: 8px;
             cursor: pointer;
         }
-        .toggle input {
-            cursor: pointer;
+        .w-controls {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            display: none;
         }
-        .toggle-label {
+        .w-value {
+            text-align: center;
+            min-width: 40px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        #dimensionDisplay {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .playback-controls {
+            display: none;
+        }
+        #frameCounter {
+            text-align: center;
             font-size: 14px;
-            user-select: none;
+            margin: 5px 0;
+            display: none;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <div class="controls">
+        <div id="dimensionDisplay">No file loaded</div>
         <input type="file" id="fileInput" multiple accept=".json">
-        <button id="playButton">Play</button>
-        <button id="pauseButton">Pause</button>
-        <button id="restartButton">Restart</button>
+        <div class="playback-controls">
+            <button id="playPauseButton">Play</button>
+            <button id="restartButton">Restart</button>
+            <div id="frameCounter">Frame: 0/0</div>
+        </div>
+        <div class="frame-nav">
+            <button id="prevFrameButton">◀</button>
+            <button id="nextFrameButton">▶</button>
+        </div>
+        <div class="w-controls" id="wControls">
+            <button id="decreaseWButton">W-</button>
+            <div class="w-value" id="wValue">W: 0</div>
+            <button id="increaseWButton">W+</button>
+        </div>
         <div class="toggle-container">
             <label class="toggle">
                 <input type="checkbox" id="loopToggle" checked>
@@ -95,173 +139,249 @@
             </label>
         </div>
     </div>
-    <div class="canvas-container">
+
+    <div class="canvas-container" id="canvas-container">
         <canvas id="leniaCanvas"></canvas>
     </div>
 
     <script>
-        const canvas = document.getElementById('leniaCanvas');
-        const ctx = canvas.getContext('2d');
-        const fileInput = document.getElementById('fileInput');
-        const playButton = document.getElementById('playButton');
-        const pauseButton = document.getElementById('pauseButton');
-        const restartButton = document.getElementById('restartButton');
-        const loopToggle = document.getElementById('loopToggle');
-
-        // Updated Configuration
-        const baseSize = Math.min(window.innerWidth * 0.99, window.innerHeight * 0.95);
-        const scale = Math.floor(1080 / baseSize);
-        const canvasSize = baseSize * scale;
-        canvas.width = canvasSize;
-        canvas.height = canvasSize;
-        
+        let scene, camera, renderer, controls;
         let frames = [];
         let currentFrame = 0;
         let isPlaying = false;
         let animationId = null;
+        let cubeInstances = new Map();
+        let currentW = 0;
+        let wMin = 0, wMax = 0;
+        let dimensions = 0;
+        let globalMinX = 0, globalMaxX = 0, globalMinY = 0, globalMaxY = 0;
+        
+        const canvas = document.getElementById('leniaCanvas');
+        const ctx = canvas.getContext('2d');
+        const frameCounter = document.getElementById('frameCounter');
+        
+        // Initialize Three.js scene for 3D/4D
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000);
+            renderer.physicallyCorrectLights = true;
+            
+            // Clear existing canvas
+            canvas.style.display = 'none';
+            const existingRenderer = document.querySelector('canvas');
+            if (existingRenderer) {
+                existingRenderer.remove();
+            }
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Calculate viewport bounds for centering
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+
+            camera.position.set(50, 50, 50);
+            camera.lookAt(0, 0, 0);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const lights = [
+                { pos: [10, 10, 10], intensity: 0.8 },
+                { pos: [-10, -10, -10], intensity: 0.6 },
+                { pos: [10, -10, 10], intensity: 0.7 },
+                { pos: [-10, 10, -10], intensity: 0.7 }
+            ];
+
+            lights.forEach(light => {
+                const directionalLight = new THREE.DirectionalLight(0xffffff, light.intensity);
+                directionalLight.position.set(...light.pos);
+                scene.add(directionalLight);
+            });
+
+            animate3D();
+        }
+
+        function init2D() {
+            // Clear Three.js renderer if exists
+            const existingRenderer = document.querySelector('canvas:not(#leniaCanvas)');
+            if (existingRenderer) {
+                existingRenderer.remove();
+            }
+            canvas.style.display = 'block';
+            
+            // Set up 2D canvas using global bounds
+            const baseSize = Math.min(window.innerWidth * 0.99, window.innerHeight * 0.95);
+            const scale = Math.floor(1080 / baseSize);
+            const canvasSize = baseSize * scale;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+        }
+
+        function detectDimensions(frameData) {
+            if (!frameData || !frameData.cells || frameData.cells.length === 0) return 0;
+            const cell = frameData.cells[0];
+            if (cell.hasOwnProperty('w')) return 4;
+            if (cell.hasOwnProperty('z')) return 3;
+            if (cell.hasOwnProperty('x') && cell.hasOwnProperty('y')) return 2;
+            return 0;
+        }
+
+        function calculateGlobalBounds() {
+            globalMinX = Infinity;
+            globalMaxX = -Infinity;
+            globalMinY = Infinity;
+            globalMaxY = -Infinity;
+
+            frames.forEach(frame => {
+                frame.cells.forEach(cell => {
+                    globalMinX = Math.min(globalMinX, cell.x);
+                    globalMaxX = Math.max(globalMaxX, cell.x);
+                    globalMinY = Math.min(globalMinY, cell.y);
+                    globalMaxY = Math.max(globalMaxY, cell.y);
+                });
+            });
+        }
 
         fileInput.addEventListener('change', async (e) => {
-            try {
-                console.log('File input change detected');
-                frames = [];
-                const files = Array.from(e.target.files).sort((a, b) => {
-                    try {
-                        const numA = parseInt(a.name.match(/\d+/)[0]);
-                        const numB = parseInt(b.name.match(/\d+/)[0]);
-                        return numA - numB;
-                    } catch (error) {
-                        console.error('Error sorting files:', error);
-                        return 0;
-                    }
-                });
+            frames = [];
+            const files = Array.from(e.target.files).sort((a, b) => {
+                const numA = parseInt(a.name.match(/\d+/)[0]);
+                const numB = parseInt(b.name.match(/\d+/)[0]);
+                return numA - numB;
+            });
 
-                console.log(`Starting to load ${files.length} files...`);
-                
-                // Reset bounds
-                minX = Infinity; maxX = -Infinity;
-                minY = Infinity; maxY = -Infinity;
+            if (files.length === 0) return;
 
-                // Load all files
-                for (const file of files) {
-                    try {
-                        console.log(`Loading ${file.name}... (size: ${file.size} bytes)`);
-                        const text = await file.text();
-                        console.log(`Parsing JSON for ${file.name}...`);
-                        const frameData = JSON.parse(text);
-                        
-                        if (!frameData || !frameData.cells) {
-                            console.error(`Invalid frame data in ${file.name}:`, frameData);
-                            continue;
-                        }
+            // Load first frame to detect dimensions
+            const firstFrameText = await files[0].text();
+            const firstFrameData = JSON.parse(firstFrameText);
+            dimensions = detectDimensions(firstFrameData);
+            
+            document.getElementById('dimensionDisplay').textContent = `${dimensions}D Visualization`;
+            document.getElementById('wControls').style.display = dimensions === 4 ? 'flex' : 'none';
+            document.querySelector('.frame-nav').style.display = 'flex';
+            document.querySelector('.toggle-container').style.display = 'flex';
+            document.querySelector('.playback-controls').style.display = 'block';
+            frameCounter.style.display = 'block';
 
-                        console.log(`Processing ${frameData.cells.length} cells in ${file.name}`);
-                        frames.push(frameData);
-
-                        // Update bounds
-                        frameData.cells.forEach(cell => {
-                            minX = Math.min(minX, cell.x);
-                            maxX = Math.max(maxX, cell.x);
-                            minY = Math.min(minY, cell.y);
-                            maxY = Math.max(maxY, cell.y);
-                        });
-                    } catch (error) {
-                        console.error(`Error processing file ${file.name}:`, error);
-                    }
-                }
-
-                if (frames.length === 0) {
-                    console.error('No valid frames were loaded');
-                    return;
-                }
-
-                console.log(`Successfully loaded ${frames.length} frames`);
-                console.log(`Bounds: X(${minX},${maxX}) Y(${minY},${maxY})`);
-                
-                // Reset to first frame and display it
-                currentFrame = 0;
-                isPlaying = false;
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
-                }
-                
-                console.log('Attempting to draw first frame...');
-                drawFrame(currentFrame);
-            } catch (error) {
-                console.error('Critical error in file loading:', error);
+            // Load all frames
+            for (const file of files) {
+                const text = await file.text();
+                const frameData = JSON.parse(text);
+                frames.push(frameData);
             }
+
+            // Calculate global bounds for 2D animations
+            if (dimensions === 2) {
+                calculateGlobalBounds();
+            }
+
+            // Initialize appropriate viewer
+            if (dimensions === 2) {
+                init2D();
+            } else if (dimensions >= 3) {
+                init3D();
+            }
+
+            currentFrame = 0;
+            currentW = 0;
+            isPlaying = false;
+            if (dimensions === 4) updateWBounds();
+            updateFrameCounter();
+            drawFrame(currentFrame);
         });
 
+        function createCube(x, y, z, value) {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: value,
+                roughness: 0.3,
+                metalness: 0.2,
+                emissive: 0xffffff,
+                emissiveIntensity: value * 0.8
+            });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(x, y, z);
+            return cube;
+        }
+
+        function draw2DFrame(frameIndex) {
+            const frame = frames[frameIndex];
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const width = globalMaxX - globalMinX;
+            const height = globalMaxY - globalMinY;
+            const scale = Math.min(
+                (canvas.width * 0.9) / width,
+                (canvas.height * 0.9) / height
+            );
+            
+            const pixelScale = Math.max(1, Math.floor(scale));
+            const offsetX = Math.floor((canvas.width - width * pixelScale) / 2);
+            const offsetY = Math.floor((canvas.height - height * pixelScale) / 2);
+
+            frame.cells.forEach(cell => {
+                const x = Math.floor((cell.x - globalMinX) * pixelScale) + offsetX;
+                const y = Math.floor((cell.y - globalMinY) * pixelScale) + offsetY;
+                ctx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
+                ctx.fillRect(x, y, pixelScale, pixelScale);
+            });
+        }
+
+        function draw3DFrame(frameIndex) {
+            cubeInstances.forEach(cube => scene.remove(cube));
+            cubeInstances.clear();
+
+            const frame = frames[frameIndex];
+            const cells = dimensions === 4 ? 
+                frame.cells.filter(cell => cell.w === currentW) :
+                frame.cells;
+
+            cells.forEach(cell => {
+                const key = `${cell.x},${cell.y},${cell.z}`;
+                const cube = createCube(cell.x, cell.y, cell.z, cell.value);
+                scene.add(cube);
+                cubeInstances.set(key, cube);
+            });
+        }
+
         function drawFrame(frameIndex) {
-            try {
-                console.log(`Drawing frame ${frameIndex}`);
-                
-                if (!frames || frames.length === 0) {
-                    console.error('No frames available to draw');
-                    return;
-                }
-                
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (!frames || frames.length === 0) return;
+            
+            if (dimensions === 2) {
+                draw2DFrame(frameIndex);
+            } else {
+                draw3DFrame(frameIndex);
+            }
+            updateFrameCounter();
+        }
 
-                const frame = frames[frameIndex];
-                if (!frame || !frame.cells) {
-                    console.error('Invalid frame data:', frame);
-                    return;
-                }
+        function updateFrameCounter() {
+            frameCounter.textContent = `Frame: ${currentFrame + 1}/${frames.length}`;
+        }
 
-                console.log(`Processing ${frame.cells.length} cells for frame ${frameIndex}`);
-                
-                // Calculate scale and offset
-                const width = maxX - minX;
-                const height = maxY - minY;
-                
-                if (width <= 0 || height <= 0) {
-                    console.error('Invalid dimensions:', { width, height, minX, maxX, minY, maxY });
-                    return;
-                }
-
-                const scale = Math.min(
-                    (canvas.width * 0.9) / width,
-                    (canvas.height * 0.9) / height
-                );
-                
-                const pixelScale = Math.max(1, Math.floor(scale));
-                const totalWidth = width * pixelScale;
-                const totalHeight = height * pixelScale;
-                const offsetX = Math.floor((canvas.width - totalWidth) / 2);
-                const offsetY = Math.floor((canvas.height - totalHeight) / 2);
-
-                console.log(`Drawing with scale: ${pixelScale}, offset: (${offsetX},${offsetY})`);
-
-                ctx.imageSmoothingEnabled = false;
-
-                const minXOffset = minX * pixelScale;
-                const minYOffset = minY * pixelScale;
-
-                // Draw cells
-                frame.cells.forEach(cell => {
-                    const x = Math.floor(cell.x * pixelScale - minXOffset) + offsetX;
-                    const y = Math.floor(cell.y * pixelScale - minYOffset) + offsetY;
-                    ctx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
-                    ctx.fillRect(x, y, pixelScale, pixelScale);
-                });
-            } catch (error) {
-                console.error('Error drawing frame:', error);
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (controls) controls.update();
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
             }
         }
 
         let lastFrameTime = 0;
-        const frameDelay = 1000 / 30; // 30 FPS
+        const frameDelay = 1000 / 30;
 
-        function animate(timestamp) {
-            if (!isPlaying) {
-                console.log('Animation stopped');
-                return;
-            }
+        function updateAnimation(timestamp) {
+            if (!isPlaying) return;
             
             const elapsed = timestamp - lastFrameTime;
             
@@ -269,14 +389,10 @@
                 drawFrame(currentFrame);
                 currentFrame++;
                 
-                // Check if we've reached the end
                 if (currentFrame >= frames.length) {
-                    console.log('Reached end of frames');
                     if (loopToggle.checked) {
-                        console.log('Looping back to start');
                         currentFrame = 0;
                     } else {
-                        console.log('Stopping at last frame');
                         currentFrame = frames.length - 1;
                         isPlaying = false;
                         return;
@@ -286,29 +402,80 @@
                 lastFrameTime = timestamp;
             }
             
-            animationId = requestAnimationFrame(animate);
+            animationId = requestAnimationFrame(updateAnimation);
         }
 
-        playButton.addEventListener('click', () => {
+        // Event Listeners
+        playPauseButton.addEventListener('click', () => {
             if (!frames.length) return;
-            isPlaying = true;
-            animate();
-        });
-
-        pauseButton.addEventListener('click', () => {
-            isPlaying = false;
-            if (animationId) {
+            isPlaying = !isPlaying;
+            playPauseButton.textContent = isPlaying ? 'Pause' : 'Play';
+            if (isPlaying) {
+                updateAnimation();
+            } else if (animationId) {
                 cancelAnimationFrame(animationId);
             }
         });
 
         restartButton.addEventListener('click', () => {
             isPlaying = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
+            if (animationId) cancelAnimationFrame(animationId);
             currentFrame = 0;
             drawFrame(currentFrame);
+            playPauseButton.textContent = 'Play';
+        });
+
+        prevFrameButton.addEventListener('click', () => {
+            isPlaying = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            currentFrame = Math.max(0, currentFrame - 1);
+            drawFrame(currentFrame);
+            playPauseButton.textContent = 'Play';
+        });
+
+        nextFrameButton.addEventListener('click', () => {
+            isPlaying = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            currentFrame = Math.min(frames.length - 1, currentFrame + 1);
+            drawFrame(currentFrame);
+            playPauseButton.textContent = 'Play';
+        });
+
+        // 4D specific controls
+        function updateWBounds() {
+            if (!frames || frames.length === 0) return;
+            const frame = frames[currentFrame];
+            wMin = Math.min(...frame.cells.map(cell => cell.w));
+            wMax = Math.max(...frame.cells.map(cell => cell.w));
+            currentW = Math.max(wMin, Math.min(wMax, currentW));
+            document.getElementById('wValue').textContent = `W: ${currentW}`;
+        }
+
+        decreaseWButton.addEventListener('click', () => {
+            if (currentW > wMin) {
+                currentW--;
+                document.getElementById('wValue').textContent = `W: ${currentW}`;
+                drawFrame(currentFrame);
+            }
+        });
+
+        increaseWButton.addEventListener('click', () => {
+            if (currentW < wMax) {
+                currentW++;
+                document.getElementById('wValue').textContent = `W: ${currentW}`;
+                drawFrame(currentFrame);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (dimensions >= 3) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            } else if (dimensions === 2) {
+                init2D();
+                drawFrame(currentFrame);
+            }
         });
     </script>
 </body>

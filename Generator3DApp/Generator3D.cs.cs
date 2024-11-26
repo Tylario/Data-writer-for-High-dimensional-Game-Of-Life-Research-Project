@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace Generator3D
 {
@@ -74,6 +75,7 @@ namespace Generator3D
                             case "minInitialValue": generator.minInitialValue = float.Parse(value); break;
                             case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
+                            case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
                             default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
@@ -97,6 +99,7 @@ namespace Generator3D
         public float minInitialValue = 0.1f;
         public float maxInitialValue = 1.0f;
         public string outputDirectory = "LeniaData3D";
+        public float maxFrameTimeSeconds = 1500.0f;
 
         private float kernelSigma;
         private float growthSigma;
@@ -196,15 +199,31 @@ namespace Generator3D
                 Directory.CreateDirectory(fullOutputPath);
             }
 
+            var sw = new Stopwatch();
+
             for (int i = 0; i < numFrames; i++)
             {
                 Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
+                
+                sw.Restart();
+                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
-                Console.WriteLine($"Frame {i + 1}/{numFrames} rendered.");
+                
+                sw.Stop();
+                
+                // Check if frame took too long
+                if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
+                {
+                    Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
+                    Console.WriteLine("Ending simulation early.");
+                    return;
+                }
+
+                Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            Console.WriteLine("Precomputing done.");
+            Console.WriteLine($"3D Lenia simulation precomputing completed.");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector3Int, float> frameData)
