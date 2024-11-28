@@ -2,18 +2,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace Generator4D
 {
-    // Custom struct to represent 4D integer vectors
-    public struct Vector4Int
+    public struct Vector4Int : IEquatable<Vector4Int>
     {
         public int x, y, z, w;
 
         public Vector4Int(int x, int y, int z, int w)
         {
-            this.x = x; this.y = y; this.z = z; this.w = w;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
         }
 
         public static Vector4Int operator +(Vector4Int a, Vector4Int b)
@@ -21,18 +25,19 @@ namespace Generator4D
             return new Vector4Int(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
         }
 
-        // Override Equals and GetHashCode for use in dictionaries
+        public bool Equals(Vector4Int other)
+        {
+            return x == other.x && y == other.y && z == other.z && w == other.w;
+        }
+
         public override bool Equals(object obj)
         {
-            if (!(obj is Vector4Int))
-                return false;
-            Vector4Int other = (Vector4Int)obj;
-            return x == other.x && y == other.y && z == other.z && w == other.w;
+            return obj is Vector4Int other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            unchecked
+            unchecked // Overflow is fine
             {
                 int hash = 17;
                 hash = hash * 31 + x;
@@ -51,7 +56,6 @@ namespace Generator4D
             LeniaDataGenerator4D generator = new LeniaDataGenerator4D();
 
             // Parse command-line arguments
-            // Usage example: --numFrames 100 --outputDirectory MyData
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i].StartsWith("--"))
@@ -60,58 +64,24 @@ namespace Generator4D
                     if (i + 1 < args.Length)
                     {
                         string value = args[i + 1];
-                        i++; // Move to next argument
+                        i++;
                         switch (param)
                         {
-                            case "numFrames":
-                                generator.numFrames = int.Parse(value);
-                                break;
-                            case "kernelRadius":
-                                generator.kernelRadius = int.Parse(value);
-                                break;
-                            case "kernelSigmaMultiplier":
-                                generator.kernelSigmaMultiplier = float.Parse(value);
-                                break;
-                            case "growthSigmaMultiplier":
-                                generator.growthSigmaMultiplier = float.Parse(value);
-                                break;
-                            case "center":
-                                generator.center = float.Parse(value);
-                                break;
-                            case "deltaT":
-                                generator.deltaT = float.Parse(value);
-                                break;
-                            case "startingAreaSize":
-                                generator.startingAreaSize = int.Parse(value);
-                                break;
-                            case "cellSpawnChance":
-                                generator.cellSpawnChance = float.Parse(value);
-                                break;
-                            case "minInitialValue":
-                                generator.minInitialValue = float.Parse(value);
-                                break;
-                            case "maxInitialValue":
-                                generator.maxInitialValue = float.Parse(value);
-                                break;
-                            case "outputDirectory":
-                                generator.outputDirectory = value;
-                                break;
-                            case "maxFrameTimeSeconds":
-                                generator.maxFrameTimeSeconds = float.Parse(value);
-                                break;
-                            default:
-                                Console.WriteLine($"Unknown parameter: {param}");
-                                break;
+                            case "numFrames": generator.numFrames = int.Parse(value); break;
+                            case "kernelRadius": generator.kernelRadius = int.Parse(value); break;
+                            case "kernelSigmaMultiplier": generator.kernelSigmaMultiplier = float.Parse(value); break;
+                            case "growthSigmaMultiplier": generator.growthSigmaMultiplier = float.Parse(value); break;
+                            case "center": generator.center = float.Parse(value); break;
+                            case "deltaT": generator.deltaT = float.Parse(value); break;
+                            case "startingAreaSize": generator.startingAreaSize = int.Parse(value); break;
+                            case "cellSpawnChance": generator.cellSpawnChance = float.Parse(value); break;
+                            case "minInitialValue": generator.minInitialValue = float.Parse(value); break;
+                            case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
+                            case "outputDirectory": generator.outputDirectory = value; break;
+                            case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
+                            default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine($"Missing value for parameter: {param}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid argument: {args[i]}");
                 }
             }
 
@@ -121,28 +91,26 @@ namespace Generator4D
 
     public class LeniaDataGenerator4D
     {
-        // Simulation parameters for 4D Lenia
-        public int numFrames = 100;
-        public int kernelRadius = 14;
+        public int numFrames = 3;
+        public int kernelRadius = 2;
         public float kernelSigmaMultiplier = 0.125f;
-        public float growthSigmaMultiplier = 0.012f;
+        public float growthSigmaMultiplier = 0.125f;
         public float center = 0.15f;
-        public float deltaT = 0.1f;
-        public int startingAreaSize = 50;
-        public float cellSpawnChance = 0.4f;
+        public float deltaT = 1f;
+        public int startingAreaSize = 30;
+        public float cellSpawnChance = 0.1f;
         public float minInitialValue = 0.1f;
         public float maxInitialValue = 1.0f;
-        public string outputDirectory = "LeniaData4D"; // Directory name where the generated frame data will be saved
+        public string outputDirectory = "LeniaData4D";
         public float maxFrameTimeSeconds = 1500.0f;
 
-        private float kernelSigma = 0;
-        private float growthSigma = 0;
+        private float kernelSigma;
+        private float growthSigma;
         private Dictionary<Vector4Int, float> aliveCells = new Dictionary<Vector4Int, float>();
         private float[] kernelValues;
         private List<Vector4Int> kernelOffsets = new List<Vector4Int>();
         private Random random = new Random();
 
-        // Serializable classes for JSON
         public class FrameData
         {
             public CellData[] cells { get; set; }
@@ -173,23 +141,17 @@ namespace Generator4D
             float sum = 0.0f;
 
             for (int i = -kernelRadius; i <= kernelRadius; i++)
+            for (int j = -kernelRadius; j <= kernelRadius; j++)
+            for (int k = -kernelRadius; k <= kernelRadius; k++)
+            for (int l = -kernelRadius; l <= kernelRadius; l++)
             {
-                for (int j = -kernelRadius; j <= kernelRadius; j++)
-                {
-                    for (int k = -kernelRadius; k <= kernelRadius; k++)
-                    {
-                        for (int l = -kernelRadius; l <= kernelRadius; l++)
-                        {
-                            float r = (float)Math.Sqrt(i * i + j * j + k * k + l * l);
-                            float exponent = -(float)Math.Pow((r - r0), 2) / (2 * (float)Math.Pow(kernelSigma, 2));
-                            float value = (float)Math.Exp(exponent);
+                float r = (float)Math.Sqrt(i * i + j * j + k * k + l * l);
+                float exponent = -(float)Math.Pow((r - r0), 2) / (2 * (float)Math.Pow(kernelSigma, 2));
+                float value = (float)Math.Exp(exponent);
 
-                            kernelOffsets.Add(new Vector4Int(i, j, k, l));
-                            kernelValueList.Add(value);
-                            sum += value;
-                        }
-                    }
-                }
+                kernelOffsets.Add(new Vector4Int(i, j, k, l));
+                kernelValueList.Add(value);
+                sum += value;
             }
 
             // Normalize kernel values
@@ -205,21 +167,15 @@ namespace Generator4D
             int halfSize = startingAreaSize / 2;
 
             for (int x = -halfSize; x < halfSize; x++)
+            for (int y = -halfSize; y < halfSize; y++)
+            for (int z = -halfSize; z < halfSize; z++)
+            for (int w = -halfSize; w < halfSize; w++)
             {
-                for (int y = -halfSize; y < halfSize; y++)
+                if (random.NextDouble() < cellSpawnChance)
                 {
-                    for (int z = -halfSize; z < halfSize; z++)
-                    {
-                        for (int w = -halfSize; w < halfSize; w++)
-                        {
-                            if (random.NextDouble() < cellSpawnChance)
-                            {
-                                Vector4Int position = new Vector4Int(x, y, z, w);
-                                float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
-                                aliveCells[position] = initialValue;
-                            }
-                        }
-                    }
+                    Vector4Int position = new Vector4Int(x, y, z, w);
+                    float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
+                    aliveCells[position] = initialValue;
                 }
             }
         }
@@ -229,16 +185,15 @@ namespace Generator4D
             string baseOutputPath = outputDirectory;
             string endBehavior = "";
             
-            // Create base directory first
             string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
-            var totalSw = new Stopwatch();
-            totalSw.Start();
 
             for (int i = 0; i < numFrames; i++)
             {
+                Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
+                
                 sw.Restart();
                 
                 SaveFrameToFile(i, aliveCells);
@@ -246,7 +201,6 @@ namespace Generator4D
                 
                 sw.Stop();
                 
-                // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
                     endBehavior = "_exploded";
@@ -254,7 +208,6 @@ namespace Generator4D
                     break;
                 }
 
-                // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
                     endBehavior = "_dead";
@@ -265,28 +218,23 @@ namespace Generator4D
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's unstable
             if (string.IsNullOrEmpty(endBehavior))
             {
                 endBehavior = "_unstable";
             }
 
-            // Rename the directory with the end behavior
             string newOutputPath = baseOutputPath + endBehavior;
             string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
             
-            // If the new path already exists, delete it
             if (Directory.Exists(newFullOutputPath))
             {
                 Directory.Delete(newFullOutputPath, true);
             }
             
-            // Rename the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
             outputDirectory = newOutputPath;
 
-            totalSw.Stop();
-            Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)} in {totalSw.Elapsed.TotalMinutes:F2} minutes.");
+            Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)
@@ -294,28 +242,22 @@ namespace Generator4D
             string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
             string filePath = Path.Combine(fullOutputPath, $"frame_{frameIndex}.json");
 
-            CellData[] cells = new CellData[frameData.Count];
-            int index = 0;
+            List<CellData> cells = new List<CellData>();
             foreach (var kvp in frameData)
             {
-                cells[index++] = new CellData
+                cells.Add(new CellData
                 {
                     x = kvp.Key.x,
                     y = kvp.Key.y,
                     z = kvp.Key.z,
                     w = kvp.Key.w,
                     value = kvp.Value
-                };
+                });
             }
 
-            FrameData frame = new FrameData { cells = cells };
+            FrameData frame = new FrameData { cells = cells.ToArray() };
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = false,
-                PropertyNamingPolicy = null, // Keep property names as they are
-            };
-
+            var options = new JsonSerializerOptions { WriteIndented = false };
             string json = JsonSerializer.Serialize(frame, options);
             File.WriteAllText(filePath, json);
         }
@@ -325,28 +267,48 @@ namespace Generator4D
             Dictionary<Vector4Int, float> newAliveCells = new Dictionary<Vector4Int, float>();
             HashSet<Vector4Int> positionsToUpdate = new HashSet<Vector4Int>();
 
-            // Collect positions to update
+            // Calculate the current bounds
+            int minX = int.MaxValue, maxX = int.MinValue;
+            int minY = int.MaxValue, maxY = int.MinValue;
+            int minZ = int.MaxValue, maxZ = int.MinValue;
+            int minW = int.MaxValue, maxW = int.MinValue;
+
+            // First, collect ALL positions that need to be checked and calculate bounds
             foreach (var cellPos in aliveCells.Keys)
             {
-                foreach (var offset in kernelOffsets)
-                {
-                    positionsToUpdate.Add(cellPos + offset);
-                }
+                // Update bounds for each dimension
+                minX = Math.Min(minX, cellPos.x - kernelRadius);
+                maxX = Math.Max(maxX, cellPos.x + kernelRadius);
+                minY = Math.Min(minY, cellPos.y - kernelRadius);
+                maxY = Math.Max(maxY, cellPos.y + kernelRadius);
+                minZ = Math.Min(minZ, cellPos.z - kernelRadius);
+                maxZ = Math.Max(maxZ, cellPos.z + kernelRadius);
+                minW = Math.Min(minW, cellPos.w - kernelRadius);
+                maxW = Math.Max(maxW, cellPos.w + kernelRadius);
             }
 
-            foreach (var position in positionsToUpdate)
+            // Check ALL positions within the bounds plus kernel radius
+            for (int x = minX; x <= maxX; x++)
+            for (int y = minY; y <= maxY; y++)
+            for (int z = minZ; z <= maxZ; z++)
+            for (int w = minW; w <= maxW; w++)
             {
+                Vector4Int position = new Vector4Int(x, y, z, w);
                 float convolutionValue = CalculateConvolution(position);
                 float growth = GrowthFunction(convolutionValue);
-
+                
                 float currentValue = aliveCells.TryGetValue(position, out float value) ? value : 0f;
                 float newValue = Clamp01(currentValue + deltaT * (2 * growth - 1));
 
-                if (newValue > 0.01f)
+                if (newValue > 0.001f)
                 {
                     newAliveCells[position] = newValue;
                 }
             }
+
+            // Debug output to verify growth
+            Console.WriteLine($"Cells changed from {aliveCells.Count} to {newAliveCells.Count}");
+            Console.WriteLine($"Bounds: X({minX} to {maxX}), Y({minY} to {maxY}), Z({minZ} to {maxZ}), W({minW} to {maxW})");
 
             aliveCells = newAliveCells;
         }
