@@ -8,8 +8,8 @@ public class GeneratorManager
     // Define a class to hold simulation parameters
     public class Simulation
     {
-        public string GeneratorPath { get; set; }
-        public string Arguments { get; set; }
+        public string GeneratorPath { get; set; } = string.Empty;
+        public string Arguments { get; set; } = string.Empty;
     }
 
     // Lists to hold simulations
@@ -28,6 +28,120 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
+        // 2D  
+        /*
+
+        int[] kernelRadii = { 2, 3, 5, 7, 10 };
+        double[] kernelSigmaMultipliers = { 0.04, 0.1, 0.125, 0.15, 0.25 };
+        double[] growthSigmaMultipliers = { 0.0015, 0.003, 0.0035, 0.0045, 0.01 };
+        double[] centers = { 0.13, 0.15, 0.17 };
+        int[] startingAreaSizes = { 3, 4, 5, 6, 8, 10, 12 };
+        double[] cellSpawnChances = { 0.2, 0.4, 0.55 };
+        double[] growthSteepnesses = { 2.0, 4.0, 7.0 };
+
+        foreach (int kr in kernelRadii)
+        foreach (double ksm in kernelSigmaMultipliers)
+        foreach (double gsm in growthSigmaMultipliers)
+        foreach (double center in centers)
+        foreach (int sas in startingAreaSizes)
+        foreach (double csc in cellSpawnChances)
+        foreach (double gs in growthSteepnesses)
+        {
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator2DPath,
+                Arguments = 
+                    "--numFrames 800 " +
+                    $"--kernelRadius {kr} " +
+                    $"--kernelSigmaMultiplier {ksm:F4} " +
+                    $"--growthSigmaMultiplier {gsm:F4} " +
+                    $"--center {center:F2} " +
+                    "--deltaT 0.1 " +
+                    $"--startingAreaSize {sas} " +
+                    $"--cellSpawnChance {csc:F2} " +
+                    "--minInitialValue 0.2 " +
+                    "--maxInitialValue 1.0 " +
+                    $"--outputDirectory 2D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
+                    $"--maxFrameTimeSeconds {0.4:F1} " +
+                    $"--growthSteepness {gs:F1}"
+            });
+        }
+
+        */
+
+        // 3D
+        /*
+
+        int[] kernelRadii = { 5, 6, 7, 8, 10 };
+        double[] kernelSigmaMultipliers = { 0.125, 0.15, 0.175, 0.2, 0.25 };
+        double[] growthSigmaMultipliers = { 0.0035, 0.004, 0.0045, 0.005, 0.01 };
+        double[] centers = { 0.15, 0.16, 0.17 };
+        int[] startingAreaSizes = { 4, 5, 6, 8, 10, 12 };
+        double[] cellSpawnChances = { 0.2, 0.4, 0.55 };
+        double[] growthSteepnesses = { 2.0, 4.0, 7.0 };
+
+        foreach (int kr in kernelRadii)
+        foreach (double ksm in kernelSigmaMultipliers)
+        foreach (double gsm in growthSigmaMultipliers)
+        foreach (double center in centers)
+        foreach (int sas in startingAreaSizes)
+        foreach (double csc in cellSpawnChances)
+        foreach (double gs in growthSteepnesses)
+        {
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator3DPath,
+                Arguments = "--numFrames 500 " +
+                    $"--kernelRadius {kr} " +
+                    $"--kernelSigmaMultiplier {ksm:F4} " +
+                    $"--growthSigmaMultiplier {gsm:F4} " +
+                    $"--center {center:F2} " +
+                    "--deltaT 0.1 " +
+                    $"--startingAreaSize {sas} " +
+                    $"--cellSpawnChance {csc:F2} " +
+                    "--minInitialValue 0.2 " +
+                    "--maxInitialValue 1.0 " +
+                    $"--growthSteepness {gs:F1} " +
+                    $"--outputDirectory 3D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
+                    $"--maxFrameTimeSeconds {1.5:F1}"
+            });
+        }
+
+        */
+
+        // 4D
+
+        int[] kernelRadii = { 2, 3, 4, 6, 8 };
+        double[] kernelSigmaMultipliers = { 0.125, 0.15, 0.175, 0.2, 0.25 };
+        double[] growthSigmaMultipliers = { 0.012, 0.015, 0.0175, 0.02, 0.025 };
+        double[] centers = { 0.15, 0.16, 0.17 };
+        int[] startingAreaSizes = { 3, 5, 6, 7, 9 };
+
+        foreach (int kr in kernelRadii)
+        foreach (double ksm in kernelSigmaMultipliers)
+        foreach (double gsm in growthSigmaMultipliers)
+        foreach (double center in centers)
+        foreach (int sas in startingAreaSizes)
+        {
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator4DPath,
+                Arguments = "--numFrames 500 " +
+                    $"--kernelRadius {kr} " +
+                    $"--kernelSigmaMultiplier {ksm:F4} " +
+                    $"--growthSigmaMultiplier {gsm:F4} " +
+                    $"--center {center:F2} " +
+                    "--deltaT 0.1 " +
+                    $"--startingAreaSize {sas} " +
+                    $"--cellSpawnChance 0.35 " +
+                    "--minInitialValue 0.25 " +
+                    "--maxInitialValue 1.0 " +
+                    $"--outputDirectory 4D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas} " +
+                    $"--maxFrameTimeSeconds {5:F1}"
+            });
+        }
+
+        /*
         simulations.Add(new Simulation
         {
             GeneratorPath = generator4DPath,
@@ -250,225 +364,222 @@ public class GeneratorManager
                         "--maxFrameTimeSeconds 2"
         });
 
-   
-/*
-
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 4 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 4 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 5 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 6 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames " +
-                "--maxFrameTimeSeconds 3"
-});
-
-
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 4 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_2 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 6 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
-
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 5 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_2 " +
-                "--maxFrameTimeSeconds 3"
-});
-
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 6 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_2 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 4 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_2 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 4 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_3 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_2 " +
+                        "--maxFrameTimeSeconds 3"
+        });
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 6 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_2 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 5.0 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_3 " +
-                "--maxFrameTimeSeconds 3"
-});
-
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 6 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_3 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 4 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_3 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 4 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_4 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5.0 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_3 " +
+                        "--maxFrameTimeSeconds 3"
+        });
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 6 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_3 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 5 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_4 " +
-                "--maxFrameTimeSeconds 3"
-});
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 4 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea4_0_500Frames_4 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
-simulations.Add(new Simulation
-{
-    GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 500 " +
-                "--kernelRadius 5 " +
-                "--kernelSigmaMultiplier 0.125 " +
-                "--growthSigmaMultiplier 0.0035 " +
-                "--center 0.15 " +
-                "--deltaT 0.1 " +
-                "--startingAreaSize 6 " +
-                "--cellSpawnChance 0.7 " +
-                "--minInitialValue 0.5 " +
-                "--maxInitialValue 1.0 " +
-                "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_4 " +
-                "--maxFrameTimeSeconds 3"
-});
+
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_0_500Frames_4 " +
+                        "--maxFrameTimeSeconds 3"
+        });
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 6 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output3D_Radius5_StartArea5_5_500Frames_4 " +
+                        "--maxFrameTimeSeconds 3"
+        });
 
 
         simulations.Add(new Simulation

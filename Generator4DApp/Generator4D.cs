@@ -226,22 +226,13 @@ namespace Generator4D
 
         void PrecomputeFrames()
         {
+            string baseOutputPath = outputDirectory;
+            string endBehavior = "";
+            
+            // Create base directory first
             string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-
-            // Clear the output directory before starting
-            if (Directory.Exists(fullOutputPath))
-            {
-                DirectoryInfo di = new DirectoryInfo(fullOutputPath);
-                foreach (FileInfo file in di.GetFiles())
-                {
-                    file.Delete();
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(fullOutputPath);
-            }
-
+            Directory.CreateDirectory(fullOutputPath);
+            
             var sw = new Stopwatch();
             var totalSw = new Stopwatch();
             totalSw.Start();
@@ -258,16 +249,44 @@ namespace Generator4D
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
+                    endBehavior = "_exploded";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
-                    Console.WriteLine("Ending simulation early.");
-                    return;
+                    break;
+                }
+
+                // Check if simulation died
+                if (aliveCells.Count == 0)
+                {
+                    endBehavior = "_dead";
+                    Console.WriteLine("No cells remaining, simulation died.");
+                    break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
+            // If we completed all frames without exploding or dying, it's unstable
+            if (string.IsNullOrEmpty(endBehavior))
+            {
+                endBehavior = "_unstable";
+            }
+
+            // Rename the directory with the end behavior
+            string newOutputPath = baseOutputPath + endBehavior;
+            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            
+            // If the new path already exists, delete it
+            if (Directory.Exists(newFullOutputPath))
+            {
+                Directory.Delete(newFullOutputPath, true);
+            }
+            
+            // Rename the directory
+            Directory.Move(fullOutputPath, newFullOutputPath);
+            outputDirectory = newOutputPath;
+
             totalSw.Stop();
-            Console.WriteLine($"4D Lenia simulation precomputing completed in {totalSw.Elapsed.TotalMinutes:F2} minutes.");
+            Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)} in {totalSw.Elapsed.TotalMinutes:F2} minutes.");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)

@@ -75,6 +75,7 @@ namespace Generator2D
                             case "center": generator.center = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
                             case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
+                            case "growthSteepness": generator.growthSteepness = float.Parse(value); break;
                                 default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
@@ -99,6 +100,7 @@ namespace Generator2D
         public float growthSigmaMultiplier = 0.125f;
         public string outputDirectory = "LeniaData2D";
         public float maxFrameTimeSeconds = 1500.0f;
+        public float growthSteepness = 1.0f;
 
         private Dictionary<Vector2Int, float> aliveCells = new Dictionary<Vector2Int, float>();
         private List<Vector2Int> kernelOffsets = new List<Vector2Int>();
@@ -178,22 +180,13 @@ namespace Generator2D
 
         void PrecomputeFrames()
         {
+            string baseOutputPath = outputDirectory;
+            string endBehavior = "";
+            
+            // Create base directory first
             string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-
-            // Clear the output directory before starting
-            if (Directory.Exists(fullOutputPath))
-            {
-                DirectoryInfo di = new DirectoryInfo(fullOutputPath);
-                foreach (FileInfo file in di.GetFiles())
-                {
-                    file.Delete();
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(fullOutputPath);
-            }
-
+            Directory.CreateDirectory(fullOutputPath);
+            
             var sw = new Stopwatch();
 
             for (int i = 0; i < numFrames; i++)
@@ -208,15 +201,43 @@ namespace Generator2D
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
+                    endBehavior = "_exploded";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
-                    Console.WriteLine("Ending simulation early.");
-                    return;
+                    break;
+                }
+
+                // Check if simulation died
+                if (aliveCells.Count == 0)
+                {
+                    endBehavior = "_dead";
+                    Console.WriteLine("No cells remaining, simulation died.");
+                    break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            Console.WriteLine($"2D Lenia simulation precomputing completed.");
+            // If we completed all frames without exploding or dying, it's unstable
+            if (string.IsNullOrEmpty(endBehavior))
+            {
+                endBehavior = "_unstable";
+            }
+
+            // Rename the directory with the end behavior
+            string newOutputPath = baseOutputPath + endBehavior;
+            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            
+            // If the new path already exists, delete it
+            if (Directory.Exists(newFullOutputPath))
+            {
+                Directory.Delete(newFullOutputPath, true);
+            }
+            
+            // Rename the directory
+            Directory.Move(fullOutputPath, newFullOutputPath);
+            outputDirectory = newOutputPath;
+
+            Console.WriteLine($"2D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector2Int, float> frameData)
@@ -287,7 +308,7 @@ namespace Generator2D
 
         float GrowthFunction(float x)
         {
-            float exponent = -((x - center) * (x - center)) / (2 * growthSigma * growthSigma);
+            float exponent = -growthSteepness * ((x - center) * (x - center)) / (2 * growthSigma * growthSigma);
             return (float)Math.Exp(exponent);
         }
 
