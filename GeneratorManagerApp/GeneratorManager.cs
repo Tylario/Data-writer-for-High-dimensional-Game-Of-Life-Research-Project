@@ -29,6 +29,7 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
+        // Working Simulation Examples
 
         simulations.Add(new Simulation
         {
@@ -43,12 +44,28 @@ public class GeneratorManager
                         "--cellSpawnChance 0.4 " +
                         "--minInitialValue 0.2 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Output2D_Radius3_GSM0035 " +
-                        "--maxFrameTimeSeconds 5"
+                        "--outputDirectory Simulations/Output2D_Radius3_GSM0035 " +
+                        "--maxFrameTimeSeconds 3"
         });
 
-        
-        /*
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 300 " +
+                        "--kernelRadius 5 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 4 " +
+                        "--cellSpawnChance 0.7 " +
+                        "--minInitialValue 0.5 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Simulations/Output3D_Radius5_StartArea4_0_500Frames " +
+                        "--maxFrameTimeSeconds 3"
+        });
+
+
         simulations.Add(new Simulation
         {
             GeneratorPath = generator4DPath,
@@ -62,15 +79,14 @@ public class GeneratorManager
                         "--cellSpawnChance 0.6 " +
                         "--minInitialValue 0.2 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Output4D_Radius3_GSM012 " +
+                        "--outputDirectory Simulations/Output4D_Radius3_GSM012 " +
                         "--maxFrameTimeSeconds 5"
         });
-        */
-
-
 
 
         /*
+
+        // Batch simulations
 
         // 2D simulations
 
@@ -196,6 +212,18 @@ public class GeneratorManager
     {
         // Create Simulations directory if it doesn't exist
         string simulationsPath = Path.Combine(Directory.GetCurrentDirectory(), "Simulations");
+        
+        // Check available disk space
+        DriveInfo drive = new DriveInfo(Path.GetPathRoot(simulationsPath));
+        long minimumRequiredSpace = 1024L * 1024L * 1024L; // 1GB in bytes
+        
+        if (drive.AvailableFreeSpace < minimumRequiredSpace)
+        {
+            Console.WriteLine($"ERROR: Insufficient disk space. Available: {drive.AvailableFreeSpace / (1024*1024)}MB");
+            Console.WriteLine("Simulations cancelled - require at least 1GB free space");
+            return;
+        }
+
         Directory.CreateDirectory(simulationsPath);
 
         Console.WriteLine("Starting simulations...");
