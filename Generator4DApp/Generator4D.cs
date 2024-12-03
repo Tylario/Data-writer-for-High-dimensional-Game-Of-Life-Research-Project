@@ -79,6 +79,7 @@ namespace Generator4D
                             case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
                             case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
+                            case "simulationName": generator.simulationName = value; break;
                             default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
@@ -101,8 +102,9 @@ namespace Generator4D
         public float cellSpawnChance = 0.1f;
         public float minInitialValue = 0.1f;
         public float maxInitialValue = 1.0f;
-        public string outputDirectory = "LeniaData4D";
+        public string outputDirectory = "Simulations/4D/temp";
         public float maxFrameTimeSeconds = 1500.0f;
+        public string simulationName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
         private float kernelSigma;
         private float growthSigma;
@@ -193,59 +195,87 @@ namespace Generator4D
 
         void PrecomputeFrames()
         {
-            string baseOutputPath = outputDirectory;
-            string endBehavior = "";
-            
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-            Directory.CreateDirectory(fullOutputPath);
-            
-            var sw = new Stopwatch();
+            // Create base simulation directory structure
+            string baseSimDir = "Simulations";
+            string dimensionDir = Path.Combine(baseSimDir, "4D");
+            string[] stateDirectories = { "stable", "dead", "unstable" };
 
-            for (int i = 0; i < numFrames; i++)
+            Directory.CreateDirectory(baseSimDir);
+            Directory.CreateDirectory(dimensionDir);
+            foreach (string dir in stateDirectories)
+            {
+                Directory.CreateDirectory(Path.Combine(dimensionDir, dir));
+            }
+
+            // Create temporary directory for simulation
+            string tempDir = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            Directory.CreateDirectory(tempDir);
+
+            var sw = new Stopwatch();
+            string endState = "unstable"; // Default state
+            int previousCellCount = aliveCells.Count;
+
+            // Get the simulation name from the last part of the output directory
+            string simulationName = Path.GetFileName(outputDirectory);
+            
+            int i;
+            for (i = 0; i < numFrames; i++)
             {
                 Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
                 
                 sw.Restart();
-                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
-                
                 sw.Stop();
-                
+
+                // Check for termination conditions
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_stable";
+                    endState = "unstable";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
 
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
+                    endState = "dead";
                     Console.WriteLine("No cells remaining, simulation died.");
                     break;
                 }
 
+                previousCellCount = aliveCells.Count;
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            if (string.IsNullOrEmpty(endBehavior))
+            // Now i is in scope here
+            if (aliveCells.Count > 0 && i == numFrames && endState == "unstable")
             {
-                endBehavior = "_stable";
+                endState = "stable";
             }
 
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            // Move files to appropriate directory
+            string finalDir = Path.Combine(dimensionDir, endState);
+            string uniqueSimDir = Path.Combine(finalDir, simulationName);
             
-            if (Directory.Exists(newFullOutputPath))
+            // Ensure unique directory
+            int counter = 1;
+            string testDir = uniqueSimDir;
+            while (Directory.Exists(testDir))
             {
-                Directory.Delete(newFullOutputPath, true);
+                testDir = uniqueSimDir + $"_{counter++}";
             }
-            
-            Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            uniqueSimDir = testDir;
 
-            Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Directory.CreateDirectory(uniqueSimDir);
+            foreach (string file in Directory.GetFiles(tempDir))
+            {
+                string fileName = Path.GetFileName(file);
+                File.Move(file, Path.Combine(uniqueSimDir, fileName));
+            }
+            Directory.Delete(tempDir, true);
+
+            Console.WriteLine($"4D Lenia simulation completed with state: {endState}");
+            Console.WriteLine($"Results saved to: {uniqueSimDir}");
         }
 
         async Task SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)
@@ -318,8 +348,7 @@ namespace Generator4D
             }
 
             // Debug output to verify growth
-            Console.WriteLine($"Cells changed from {aliveCells.Count} to {newAliveCells.Count}");
-            Console.WriteLine($"Bounds: X({minX} to {maxX}), Y({minY} to {maxY}), Z({minZ} to {maxZ}), W({minW} to {maxW})");
+            Console.WriteLine($"Cells {aliveCells.Count} -> {newAliveCells.Count}, Bounds: X({minX} to {maxX}), Y({minY} to {maxY}), Z({minZ} to {maxZ}), W({minW} to {maxW})");
 
             aliveCells = newAliveCells;
         }

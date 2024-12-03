@@ -184,29 +184,41 @@ namespace Generator3D
 
         void PrecomputeFrames()
         {
-            string baseOutputPath = outputDirectory;
-            string endBehavior = "";
-            
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-            Directory.CreateDirectory(fullOutputPath);
-            
+            // Create base simulation directory structure
+            string baseSimPath = Path.Combine(Directory.GetCurrentDirectory(), "Simulations");
+            string dim3DPath = Path.Combine(baseSimPath, "3D");
+            string stablePath = Path.Combine(dim3DPath, "stable");
+            string deadPath = Path.Combine(dim3DPath, "dead");
+            string unstablePath = Path.Combine(dim3DPath, "unstable");
+
+            Directory.CreateDirectory(baseSimPath);
+            Directory.CreateDirectory(dim3DPath);
+            Directory.CreateDirectory(stablePath);
+            Directory.CreateDirectory(deadPath);
+            Directory.CreateDirectory(unstablePath);
+
+            // Create temporary working directory
+            string tempDir = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            Directory.CreateDirectory(tempDir);
+
             var sw = new Stopwatch();
+            string endState = "stable"; // Default state
+            int previousCellCount = aliveCells.Count;
+            int stableFrameCount = 0;
 
             for (int i = 0; i < numFrames; i++)
             {
                 Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
                 
                 sw.Restart();
-                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
-                
                 sw.Stop();
-                
+
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_stable";
+                    endState = "unstable";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -214,41 +226,49 @@ namespace Generator3D
                 // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
+                    endState = "dead";
                     Console.WriteLine("No cells remaining, simulation died.");
                     break;
                 }
 
+                // Check for stability
+                if (Math.Abs(aliveCells.Count - previousCellCount) <= 5)
+                {
+                    stableFrameCount++;
+                    if (stableFrameCount >= 10) // Consider stable if cell count remains similar for 10 frames
+                    {
+                        endState = "stable";
+                    }
+                }
+                else
+                {
+                    stableFrameCount = 0;
+                }
+
+                previousCellCount = aliveCells.Count;
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's stable
-            if (string.IsNullOrEmpty(endBehavior))
+            // Determine final destination based on end state
+            string finalDestination = Path.Combine(dim3DPath, endState, Path.GetFileName(outputDirectory));
+
+            // If the destination already exists, delete it
+            if (Directory.Exists(finalDestination))
             {
-                endBehavior = "_stable";
+                Directory.Delete(finalDestination, true);
             }
 
-            // Rename the directory with the end behavior
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
-            
-            // If the new path already exists, delete it
-            if (Directory.Exists(newFullOutputPath))
-            {
-                Directory.Delete(newFullOutputPath, true);
-            }
-            
-            // Rename the directory
-            Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            // Move the temporary directory to final destination
+            Directory.Move(tempDir, finalDestination);
+            outputDirectory = finalDestination;
 
-            Console.WriteLine($"3D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Console.WriteLine($"3D Lenia simulation completed with state: {endState}");
+            Console.WriteLine($"Output saved to: {finalDestination}");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector3Int, float> frameData)
         {
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-            string filePath = Path.Combine(fullOutputPath, $"frame_{frameIndex}.json");
+            string filePath = Path.Combine(outputDirectory, $"frame_{frameIndex}.json");
 
             List<CellData> cells = new List<CellData>();
             foreach (var kvp in frameData)

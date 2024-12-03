@@ -180,14 +180,22 @@ namespace Generator2D
 
         void PrecomputeFrames()
         {
-            string baseOutputPath = outputDirectory;
-            string endBehavior = "";
+            // Create base simulation directory structure
+            string baseSimPath = Path.Combine(Directory.GetCurrentDirectory(), "Simulations");
+            string dim2DPath = Path.Combine(baseSimPath, "2D");
             
-            // Create base directory first
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-            Directory.CreateDirectory(fullOutputPath);
-            
+            foreach (string state in new[] { "stable", "dead", "unstable" })
+            {
+                Directory.CreateDirectory(Path.Combine(dim2DPath, state));
+            }
+
+            // Create temporary directory for simulation
+            string tempDir = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            Directory.CreateDirectory(tempDir);
+
             var sw = new Stopwatch();
+            string endState = "stable"; // Default state
+            bool exploded = false;
 
             for (int i = 0; i < numFrames; i++)
             {
@@ -198,10 +206,11 @@ namespace Generator2D
                 
                 sw.Stop();
                 
-                // Check if frame took too long
+                // Check if frame took too long (unstable/exploding)
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_stable";
+                    endState = "unstable";
+                    exploded = true;
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -209,7 +218,7 @@ namespace Generator2D
                 // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
+                    endState = "dead";
                     Console.WriteLine("No cells remaining, simulation died.");
                     break;
                 }
@@ -217,33 +226,31 @@ namespace Generator2D
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's stable
-            if (string.IsNullOrEmpty(endBehavior))
+            // Determine final directory based on simulation characteristics
+            string finalDir = Path.Combine(dim2DPath, endState, Path.GetFileName(outputDirectory));
+
+            // If the final directory already exists, delete it
+            if (Directory.Exists(finalDir))
             {
-                endBehavior = "_stable";
+                Directory.Delete(finalDir, true);
             }
 
-            // Rename the directory with the end behavior
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
-            
-            // If the new path already exists, delete it
-            if (Directory.Exists(newFullOutputPath))
-            {
-                Directory.Delete(newFullOutputPath, true);
-            }
-            
-            // Rename the directory
-            Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            // Move the temporary directory to its final location
+            Directory.Move(tempDir, finalDir);
 
-            Console.WriteLine($"2D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            // Update output directory path
+            outputDirectory = finalDir;
+
+            Console.WriteLine($"2D Lenia simulation completed with state: {endState}");
+            if (exploded)
+            {
+                Console.WriteLine("Simulation terminated early due to instability.");
+            }
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector2Int, float> frameData)
         {
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
-            string filePath = Path.Combine(fullOutputPath, $"frame_{frameIndex}.json");
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory, $"frame_{frameIndex}.json");
 
             CellData[] cells = new CellData[frameData.Count];
             int index = 0;

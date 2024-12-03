@@ -31,6 +31,9 @@ public class GeneratorManager
 
         // Working Simulation Examples
 
+
+        /*
+
         simulations.Add(new Simulation
         {
             GeneratorPath = generator2DPath,
@@ -65,6 +68,7 @@ public class GeneratorManager
                         "--maxFrameTimeSeconds 3"
         });
 
+        /*
 
         simulations.Add(new Simulation
         {
@@ -79,9 +83,45 @@ public class GeneratorManager
                         "--cellSpawnChance 0.6 " +
                         "--minInitialValue 0.2 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Simulations/test4D " +
+                        "--outputDirectory Simulations/test4D_stable " +
                         "--maxFrameTimeSeconds 5"
         });
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator4DPath,
+            Arguments = "--numFrames 8 " +
+                        "--kernelRadius 3 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.012 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 1 " +
+                        "--cellSpawnChance 0.6 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Simulations/test4D_die " +
+                        "--maxFrameTimeSeconds 5"
+        });
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator4DPath,
+            Arguments = "--numFrames 15 " +
+                        "--kernelRadius 3 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.012 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.6 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Simulations/test4D_dead " +
+                        "--maxFrameTimeSeconds 2"
+        });
+
+        */
 
 
         /*
