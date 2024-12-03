@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Generator3DApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ed2b50aad0f41731a3e3a24c29c67067090689e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f09fd6bfa5098c36cd1f998df371f252aed5da9")]
 [assembly: System.Reflection.AssemblyProductAttribute("Generator3DApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Generator3DApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

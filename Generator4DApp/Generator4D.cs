@@ -214,7 +214,7 @@ namespace Generator4D
                 
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_exploded";
+                    endBehavior = "_stable";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -231,7 +231,7 @@ namespace Generator4D
 
             if (string.IsNullOrEmpty(endBehavior))
             {
-                endBehavior = "_unstable";
+                endBehavior = "_stable";
             }
 
             string newOutputPath = baseOutputPath + endBehavior;

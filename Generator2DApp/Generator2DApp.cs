@@ -201,7 +201,7 @@ namespace Generator2D
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_exploded";
+                    endBehavior = "_stable";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -217,10 +217,10 @@ namespace Generator2D
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's unstable
+            // If we completed all frames without exploding or dying, it's stable
             if (string.IsNullOrEmpty(endBehavior))
             {
-                endBehavior = "_unstable";
+                endBehavior = "_stable";
             }
 
             // Rename the directory with the end behavior

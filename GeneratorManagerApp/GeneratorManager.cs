@@ -40,11 +40,11 @@ public class GeneratorManager
                         "--growthSigmaMultiplier 0.0035 " +
                         "--center 0.15 " +
                         "--deltaT 0.1 " +
-                        "--startingAreaSize 9 " +
+                        "--startingAreaSize 16 " +
                         "--cellSpawnChance 0.4 " +
                         "--minInitialValue 0.2 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Simulations/Output2D_Radius3_GSM0035 " +
+                        "--outputDirectory Simulations/test2D " +
                         "--maxFrameTimeSeconds 3"
         });
 
@@ -61,7 +61,7 @@ public class GeneratorManager
                         "--cellSpawnChance 0.7 " +
                         "--minInitialValue 0.5 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Simulations/Output3D_Radius5_StartArea4_0_500Frames " +
+                        "--outputDirectory Simulations/test3D " +
                         "--maxFrameTimeSeconds 3"
         });
 
@@ -79,7 +79,7 @@ public class GeneratorManager
                         "--cellSpawnChance 0.6 " +
                         "--minInitialValue 0.2 " +
                         "--maxInitialValue 1.0 " +
-                        "--outputDirectory Simulations/Output4D_Radius3_GSM012 " +
+                        "--outputDirectory Simulations/test4D " +
                         "--maxFrameTimeSeconds 5"
         });
 
