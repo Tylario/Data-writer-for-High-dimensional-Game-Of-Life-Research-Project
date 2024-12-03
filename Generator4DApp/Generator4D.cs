@@ -136,23 +136,29 @@ namespace Generator4D
 
         void InitializeKernel()
         {
+            float kernelSigmaSquared = kernelSigma * kernelSigma;
             List<float> kernelValueList = new List<float>();
             float r0 = kernelRadius / 2.0f;
             float sum = 0.0f;
 
-            for (int i = -kernelRadius; i <= kernelRadius; i++)
-            for (int j = -kernelRadius; j <= kernelRadius; j++)
-            for (int k = -kernelRadius; k <= kernelRadius; k++)
-            for (int l = -kernelRadius; l <= kernelRadius; l++)
+            Parallel.For(-kernelRadius, kernelRadius + 1, i =>
             {
-                float r = (float)Math.Sqrt(i * i + j * j + k * k + l * l);
-                float exponent = -(float)Math.Pow((r - r0), 2) / (2 * (float)Math.Pow(kernelSigma, 2));
-                float value = (float)Math.Exp(exponent);
+                for (int j = -kernelRadius; j <= kernelRadius; j++)
+                for (int k = -kernelRadius; k <= kernelRadius; k++)
+                for (int l = -kernelRadius; l <= kernelRadius; l++)
+                {
+                    float r = (float)Math.Sqrt(i * i + j * j + k * k + l * l);
+                    float exponent = -(float)Math.Pow((r - r0), 2) / (2 * kernelSigmaSquared);
+                    float value = (float)Math.Exp(exponent);
 
-                kernelOffsets.Add(new Vector4Int(i, j, k, l));
-                kernelValueList.Add(value);
-                sum += value;
-            }
+                    lock (kernelOffsets)
+                    {
+                        kernelOffsets.Add(new Vector4Int(i, j, k, l));
+                        kernelValueList.Add(value);
+                    }
+                    sum += value;
+                }
+            });
 
             // Normalize kernel values
             kernelValues = new float[kernelValueList.Count];
@@ -166,18 +172,23 @@ namespace Generator4D
         {
             int halfSize = startingAreaSize / 2;
 
-            for (int x = -halfSize; x < halfSize; x++)
-            for (int y = -halfSize; y < halfSize; y++)
-            for (int z = -halfSize; z < halfSize; z++)
-            for (int w = -halfSize; w < halfSize; w++)
+            Parallel.For(-halfSize, halfSize, x =>
             {
-                if (random.NextDouble() < cellSpawnChance)
+                for (int y = -halfSize; y < halfSize; y++)
+                for (int z = -halfSize; z < halfSize; z++)
+                for (int w = -halfSize; w < halfSize; w++)
                 {
-                    Vector4Int position = new Vector4Int(x, y, z, w);
-                    float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
-                    aliveCells[position] = initialValue;
+                    if (random.NextDouble() < cellSpawnChance)
+                    {
+                        Vector4Int position = new Vector4Int(x, y, z, w);
+                        float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
+                        lock (aliveCells)
+                        {
+                            aliveCells[position] = initialValue;
+                        }
+                    }
                 }
-            }
+            });
         }
 
         void PrecomputeFrames()
@@ -237,7 +248,7 @@ namespace Generator4D
             Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
         }
 
-        void SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)
+        async Task SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)
         {
             string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
             string filePath = Path.Combine(fullOutputPath, $"frame_{frameIndex}.json");
@@ -259,7 +270,7 @@ namespace Generator4D
 
             var options = new JsonSerializerOptions { WriteIndented = false };
             string json = JsonSerializer.Serialize(frame, options);
-            File.WriteAllText(filePath, json);
+            await File.WriteAllTextAsync(filePath, json);
         }
 
         public void NextGeneration()

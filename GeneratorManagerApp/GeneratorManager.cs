@@ -140,12 +140,52 @@ public class GeneratorManager
                     "--minInitialValue 0.25 " +
                     "--maxInitialValue 1.0 " +
                     $"--outputDirectory 4D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas} " +
-                    $"--maxFrameTimeSeconds {5:F1}"
+                    $"--maxFrameTimeSeconds {3:F1}"
             });
         }
     
         */
 
+        // 3D Example
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator3DPath,
+            Arguments = "--numFrames 500 " +
+                        "--kernelRadius 6 " +
+                        "--kernelSigmaMultiplier 0.175 " +
+                        "--growthSigmaMultiplier 0.004 " +
+                        "--center 0.16 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 8 " +
+                        "--cellSpawnChance 0.4 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--growthSteepness 4.0 " +
+                        "--outputDirectory 3D_Example " +
+                        "--maxFrameTimeSeconds 1.5"
+        });
+
+        /*
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator4DPath,
+            Arguments = "--numFrames 10 " +
+                        "--kernelRadius 3 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.012 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.6 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output4D_Radius3_GSM012 " +
+                        "--maxFrameTimeSeconds 5"
+        });
+
+        */
     }
     
 
