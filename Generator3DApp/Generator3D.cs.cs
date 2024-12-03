@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Generator3D
 {
@@ -108,6 +109,13 @@ namespace Generator3D
         private List<Vector3Int> kernelOffsets = new List<Vector3Int>();
         private Random random = new Random();
 
+        // Add new fields for optimization
+        private float kernelR0Squared;
+        private float kernelSigmaSquared;
+        private float growthSigmaSquared;
+        private float twoGrowthSigmaSquared;
+        private Dictionary<Vector3Int, int> kernelOffsetIndices;
+
         public class FrameData
         {
             public CellData[] cells { get; set; }
@@ -125,6 +133,13 @@ namespace Generator3D
         {
             kernelSigma = kernelRadius * kernelSigmaMultiplier;
             growthSigma = kernelRadius * growthSigmaMultiplier;
+            
+            // Precompute squared values
+            kernelR0Squared = (float)Math.Pow(kernelRadius / 2.0f, 2);
+            kernelSigmaSquared = kernelSigma * kernelSigma;
+            growthSigmaSquared = growthSigma * growthSigma;
+            twoGrowthSigmaSquared = 2 * growthSigmaSquared;
+            
             InitializeKernel();
             InitializeGame();
             PrecomputeFrames();
@@ -133,8 +148,9 @@ namespace Generator3D
         void InitializeKernel()
         {
             List<float> kernelValueList = new List<float>();
-            float r0 = kernelRadius / 2.0f;
+            kernelOffsetIndices = new Dictionary<Vector3Int, int>();
             float sum = 0.0f;
+            int index = 0;
 
             for (int i = -kernelRadius; i <= kernelRadius; i++)
             {
@@ -142,11 +158,13 @@ namespace Generator3D
                 {
                     for (int k = -kernelRadius; k <= kernelRadius; k++)
                     {
-                        float r = (float)Math.Sqrt(i * i + j * j + k * k);
-                        float exponent = -(float)Math.Pow((r - r0), 2) / (2 * (float)Math.Pow(kernelSigma, 2));
+                        float rSquared = i * i + j * j + k * k;
+                        float exponent = -(rSquared - kernelR0Squared) / (2 * kernelSigmaSquared);
                         float value = (float)Math.Exp(exponent);
 
-                        kernelOffsets.Add(new Vector3Int(i, j, k));
+                        Vector3Int offset = new Vector3Int(i, j, k);
+                        kernelOffsets.Add(offset);
+                        kernelOffsetIndices[offset] = index++;
                         kernelValueList.Add(value);
                         sum += value;
                     }
@@ -154,10 +172,11 @@ namespace Generator3D
             }
 
             // Normalize kernel values
-            kernelValues = new float[kernelValueList.Count];
-            for (int idx = 0; idx < kernelValueList.Count; idx++)
+            kernelValues = kernelValueList.ToArray();
+            float invSum = 1f / sum;
+            for (int idx = 0; idx < kernelValues.Length; idx++)
             {
-                kernelValues[idx] = kernelValueList[idx] / sum;
+                kernelValues[idx] *= invSum;
             }
         }
 
@@ -193,6 +212,7 @@ namespace Generator3D
             
             var sw = new Stopwatch();
 
+            // Parallel processing of frames
             for (int i = 0; i < numFrames; i++)
             {
                 Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
@@ -275,6 +295,7 @@ namespace Generator3D
             Dictionary<Vector3Int, float> newAliveCells = new Dictionary<Vector3Int, float>();
             HashSet<Vector3Int> positionsToUpdate = new HashSet<Vector3Int>();
 
+            // Gather positions to update
             foreach (var cellPos in aliveCells.Keys)
             {
                 foreach (var offset in kernelOffsets)
@@ -283,7 +304,11 @@ namespace Generator3D
                 }
             }
 
-            foreach (var position in positionsToUpdate)
+            // Parallel processing of positions
+            var positions = positionsToUpdate.ToArray();
+            var results = new Dictionary<Vector3Int, float>();
+
+            Parallel.ForEach(positions, position =>
             {
                 float convolutionValue = CalculateConvolution(position);
                 float growth = GrowthFunction(convolutionValue);
@@ -293,31 +318,41 @@ namespace Generator3D
 
                 if (newValue > 0.01f)
                 {
-                    newAliveCells[position] = newValue;
+                    lock (results)
+                    {
+                        results[position] = newValue;
+                    }
                 }
-            }
+            });
 
-            aliveCells = newAliveCells;
+            aliveCells = results;
         }
 
         private float CalculateConvolution(Vector3Int position)
         {
             float sum = 0f;
-            for (int idx = 0; idx < kernelOffsets.Count; idx++)
+            
+            foreach (var cell in aliveCells)
             {
-                Vector3Int neighborPos = position + kernelOffsets[idx];
-                if (aliveCells.TryGetValue(neighborPos, out float neighborValue))
+                Vector3Int offset = new Vector3Int(
+                    cell.Key.x - position.x,
+                    cell.Key.y - position.y,
+                    cell.Key.z - position.z
+                );
+                
+                if (kernelOffsetIndices.TryGetValue(offset, out int idx))
                 {
-                    sum += neighborValue * kernelValues[idx];
+                    sum += cell.Value * kernelValues[idx];
                 }
             }
+            
             return sum;
         }
 
         float GrowthFunction(float x)
         {
-            float exponent = -((x - center) * (x - center)) / (2 * growthSigma * growthSigma);
-            return (float)Math.Exp(exponent);
+            float diff = x - center;
+            return (float)Math.Exp(-(diff * diff) / twoGrowthSigmaSquared);
         }
 
         float Clamp01(float value)

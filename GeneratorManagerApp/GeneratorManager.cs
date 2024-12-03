@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.IO;
 
 public class GeneratorManager
 {
@@ -28,24 +29,66 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
-        // 2D  
+
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator2DPath,
+            Arguments = "--numFrames 100 " +
+                        "--kernelRadius 8 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.0035 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 9 " +
+                        "--cellSpawnChance 0.4 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output2D_Radius3_GSM0035 " +
+                        "--maxFrameTimeSeconds 5"
+        });
+
+        
+        /*
+        simulations.Add(new Simulation
+        {
+            GeneratorPath = generator4DPath,
+            Arguments = "--numFrames 10 " +
+                        "--kernelRadius 3 " +
+                        "--kernelSigmaMultiplier 0.125 " +
+                        "--growthSigmaMultiplier 0.012 " +
+                        "--center 0.15 " +
+                        "--deltaT 0.1 " +
+                        "--startingAreaSize 5 " +
+                        "--cellSpawnChance 0.6 " +
+                        "--minInitialValue 0.2 " +
+                        "--maxInitialValue 1.0 " +
+                        "--outputDirectory Output4D_Radius3_GSM012 " +
+                        "--maxFrameTimeSeconds 5"
+        });
+        */
+
+
+
+
         /*
 
-        int[] kernelRadii = { 2, 3, 5, 7, 10 };
-        double[] kernelSigmaMultipliers = { 0.04, 0.1, 0.125, 0.15, 0.25 };
-        double[] growthSigmaMultipliers = { 0.0015, 0.003, 0.0035, 0.0045, 0.01 };
-        double[] centers = { 0.13, 0.15, 0.17 };
-        int[] startingAreaSizes = { 3, 4, 5, 6, 8, 10, 12 };
-        double[] cellSpawnChances = { 0.2, 0.4, 0.55 };
-        double[] growthSteepnesses = { 2.0, 4.0, 7.0 };
+        // 2D simulations
 
-        foreach (int kr in kernelRadii)
-        foreach (double ksm in kernelSigmaMultipliers)
-        foreach (double gsm in growthSigmaMultipliers)
-        foreach (double center in centers)
-        foreach (int sas in startingAreaSizes)
-        foreach (double csc in cellSpawnChances)
-        foreach (double gs in growthSteepnesses)
+        int[] kernelRadii2D = { 2, 3, 5, 7, 10 };
+        double[] kernelSigmaMultipliers2D = { 0.04, 0.1, 0.125, 0.15, 0.25 };
+        double[] growthSigmaMultipliers2D = { 0.0015, 0.003, 0.0035, 0.0045, 0.01 };
+        double[] centers2D = { 0.13, 0.15, 0.17 };
+        int[] startingAreaSizes2D = { 3, 4, 5, 6, 8, 10, 12 };
+        double[] cellSpawnChances2D = { 0.2, 0.4, 0.55 };
+        double[] growthSteepnesses2D = { 2.0, 4.0, 7.0 };
+
+        foreach (int kr in kernelRadii2D)
+        foreach (double ksm in kernelSigmaMultipliers2D)
+        foreach (double gsm in growthSigmaMultipliers2D)
+        foreach (double center in centers2D)
+        foreach (int sas in startingAreaSizes2D)
+        foreach (double csc in cellSpawnChances2D)
+        foreach (double gs in growthSteepnesses2D)
         {
             simulations.Add(new Simulation
             {
@@ -61,33 +104,31 @@ public class GeneratorManager
                     $"--cellSpawnChance {csc:F2} " +
                     "--minInitialValue 0.2 " +
                     "--maxInitialValue 1.0 " +
-                    $"--outputDirectory 2D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
-                    $"--maxFrameTimeSeconds {0.4:F1} " +
+                    $"--outputDirectory Simulations/2D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
+                    $"--maxFrameTimeSeconds {0.5:F1} " +
                     $"--growthSteepness {gs:F1}"
             });
         }
 
-        */
 
         // 3D
 
-        /*
 
-        int[] kernelRadii = { 5, 6, 7, 8, 10 };
-        double[] kernelSigmaMultipliers = { 0.125, 0.15, 0.175, 0.2, 0.25 };
-        double[] growthSigmaMultipliers = { 0.0035, 0.004, 0.0045, 0.005, 0.01 };
-        double[] centers = { 0.15, 0.16, 0.17 };
-        int[] startingAreaSizes = { 4, 5, 6, 8, 10, 12 };
-        double[] cellSpawnChances = { 0.2, 0.4, 0.55 };
-        double[] growthSteepnesses = { 2.0, 4.0, 7.0 };
+        int[] kernelRadii3D = { 5, 6, 7, 8, 10 };
+        double[] kernelSigmaMultipliers3D = { 0.125, 0.15, 0.175, 0.2, 0.25 };
+        double[] growthSigmaMultipliers3D = { 0.0035, 0.004, 0.0045, 0.005, 0.01 };
+        double[] centers3D = { 0.15, 0.16, 0.17 };
+        int[] startingAreaSizes3D = { 4, 5, 6, 8, 10, 12 };
+        double[] cellSpawnChances3D = { 0.2, 0.4, 0.55 };
+        double[] growthSteepnesses3D = { 2.0, 4.0, 7.0 };
 
-        foreach (int kr in kernelRadii)
-        foreach (double ksm in kernelSigmaMultipliers)
-        foreach (double gsm in growthSigmaMultipliers)
-        foreach (double center in centers)
-        foreach (int sas in startingAreaSizes)
-        foreach (double csc in cellSpawnChances)
-        foreach (double gs in growthSteepnesses)
+        foreach (int kr in kernelRadii3D)
+        foreach (double ksm in kernelSigmaMultipliers3D)
+        foreach (double gsm in growthSigmaMultipliers3D)
+        foreach (double center in centers3D)
+        foreach (int sas in startingAreaSizes3D)
+        foreach (double csc in cellSpawnChances3D)
+        foreach (double gs in growthSteepnesses3D)
         {
             simulations.Add(new Simulation
             {
@@ -103,28 +144,29 @@ public class GeneratorManager
                     "--minInitialValue 0.2 " +
                     "--maxInitialValue 1.0 " +
                     $"--growthSteepness {gs:F1} " +
-                    $"--outputDirectory 3D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
+                    $"--outputDirectory Simulations/3D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
                     $"--maxFrameTimeSeconds {1.5:F1}"
             });
         }
 
-        */
 
-        // 4D
+        // 4D simulations
 
-        /*
+        int[] kernelRadii4D = { 2, 3, 4, 5 };
+        double[] kernelSigmaMultipliers4D = { 0.125, 0.15, 0.175, 0.2, 0.25 };
+        double[] growthSigmaMultipliers4D = { 0.012, 0.015, 0.0175, 0.02, 0.025 };
+        double[] centers4D = { 0.15, 0.16, 0.17 };
+        int[] startingAreaSizes4D = { 3, 5, 6, 7, 9 };
+        double[] cellSpawnChances4D = { 0.2, 0.4, 0.55 };
+        double[] growthSteepnesses4D = { 2.0, 4.0, 7.0 };
 
-        int[] kernelRadii = { 2, 3, 4, 6, 8 };
-        double[] kernelSigmaMultipliers = { 0.125, 0.15, 0.175, 0.2, 0.25 };
-        double[] growthSigmaMultipliers = { 0.012, 0.015, 0.0175, 0.02, 0.025 };
-        double[] centers = { 0.15, 0.16, 0.17 };
-        int[] startingAreaSizes = { 3, 5, 6, 7, 9 };
-
-        foreach (int kr in kernelRadii)
-        foreach (double ksm in kernelSigmaMultipliers)
-        foreach (double gsm in growthSigmaMultipliers)
-        foreach (double center in centers)
-        foreach (int sas in startingAreaSizes)
+        foreach (int kr in kernelRadii4D)
+        foreach (double ksm in kernelSigmaMultipliers4D)
+        foreach (double gsm in growthSigmaMultipliers4D)
+        foreach (double center in centers4D)
+        foreach (int sas in startingAreaSizes4D)
+        foreach (double csc in cellSpawnChances4D)
+        foreach (double gs in growthSteepnesses4D)
         {
             simulations.Add(new Simulation
             {
@@ -136,21 +178,26 @@ public class GeneratorManager
                     $"--center {center:F2} " +
                     "--deltaT 0.1 " +
                     $"--startingAreaSize {sas} " +
-                    $"--cellSpawnChance 0.35 " +
-                    "--minInitialValue 0.25 " +
+                    $"--cellSpawnChance {csc:F2} " +
+                    "--minInitialValue 0.2 " +
                     "--maxInitialValue 1.0 " +
-                    $"--outputDirectory 4D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas} " +
+                    $"--growthSteepness {gs:F1} " +
+                    $"--outputDirectory Simulations/4D_KR{kr}_KSM{ksm:F4}_GSM{gsm:F4}_C{center:F2}_SAS{sas}_CSC{csc:F2}_GS{gs:F1} " +
                     $"--maxFrameTimeSeconds {5:F1}"
             });
         }
-    
-        */
 
+        */
+        
     }
     
 
     public async Task RunSimulations()
     {
+        // Create Simulations directory if it doesn't exist
+        string simulationsPath = Path.Combine(Directory.GetCurrentDirectory(), "Simulations");
+        Directory.CreateDirectory(simulationsPath);
+
         Console.WriteLine("Starting simulations...");
 
         foreach (var simulation in simulations)
