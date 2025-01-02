@@ -111,12 +111,10 @@ Instead of binary states (0 or 1), cells can take continuous values between 0 an
 ## Results
 
 ### Patterns Observed
-- **Explosive Growth:** Rapid expansion of live cells.
-- **Static Equilibrium:** Stable patterns resembling oscillators and gliders.
-- **Decay:** Patterns that eventually die out.
+- **Explosive Growth:** Rapid expansion of live cells, often overwhelming the space and filling it completely.
+- **Decay:** Patterns that gradually die out, either due to overcrowding or insufficient support from neighbors.
+- **Static Equilibrium:** Patterns that stabilize into fixed shapes, such as circles or spheres, which do not change over time.
+- **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry.
+- **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life.
+- **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals.
 
-### Observations
-The results revealed diverse behaviors across dimensions and configurations:
-- **Explosive Growth** frequently occurred with larger kernel radii and high cell spawn chances, leading to rapid saturation of the grid.
-- **Static Equilibrium** patterns formed stable shapes or oscillators that persisted over time. In higher dimensions, static patterns often appeared more complex, forming multi-layered structures.
-- **Decay** patterns died out either due to underpopulation or overcrowding. This behavior was common when growth parameters were too restrictive.
