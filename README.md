@@ -111,9 +111,10 @@ Instead of binary states (0 or 1), cells can take continuous values between 0 an
 ## Results
 
 ### Patterns Observed
-- **Explosive Growth:** Rapid expansion of live cells, often overwhelming the space and filling it completely.
-- **Decay:** Patterns that gradually die out, either due to overcrowding or insufficient support from neighbors.
-- **Static Equilibrium:** Patterns that stabilize into fixed shapes, such as circles or spheres, which do not change over time.
+- **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns
+- **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly
+- **Decay:** Patterns that gradually die out, either due to insufficient support from neighbors or overcrowding.
+- **Static Equilibrium:** Patterns that stabilize into fixed shapes, usually as circles/sphere, which do not change over time.
 - **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry.
 - **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life.
 - **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals.
