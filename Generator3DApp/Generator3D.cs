@@ -215,6 +215,9 @@ namespace Generator3D
             
             var sw = new Stopwatch();
 
+            int targetFrameThreshold = (int)(numFrames * 0.6);
+            bool reachedThreshold = false;
+            
             for (int i = 0; i < numFrames; i++)
             {
                 sw.Restart();
@@ -232,10 +235,16 @@ namespace Generator3D
                     break;
                 }
 
+                // Check if we've reached the threshold for "lived" status
+                if (i >= targetFrameThreshold && aliveCells.Count > 0)
+                {
+                    reachedThreshold = true;
+                }
+
                 // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    behavior = i < 25 ? "died" : "lived";
+                    behavior = reachedThreshold ? "lived" : "died";
                     Console.WriteLine($"No cells remaining after {i} frames.");
                     break;
                 }

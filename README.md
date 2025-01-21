@@ -18,39 +18,96 @@ dotnet run --project GeneratorManagerApp
 ```
 
 ### Customizing Simulations
-You can customize the simulations by modifying the `GeneratorManager.cs` file in the repository. Specifically, edit the `InitializeSimulations()` method within the `GeneratorManager` class. 
+You can customize the simulations by modifying the `GeneratorManager.cs` file in the repository. In the `InitializeSimulations()` method, you can either add custom simulations or run multiple random simulations.
 
-**Example Code Snippet:**
+#### Adding Custom Simulations:
 ```csharp
-private void InitializeSimulations()
+// 2D Example
+simulations.Add(new Simulation
 {
-    // Define paths to each generator executable
-    string generator2DPath = @"./Generator2DApp/bin/Debug/net8.0/Generator2DApp";
-    string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
-    string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
+    GeneratorPath = generator2DPath,
+    Arguments = "--numFrames 75 " +
+               "--kernelRadius 9 " +
+               "--kernelSigmaMultiplier 0.175 " +
+               "--growthSigmaMultiplier 0.004 " +
+               "--center 0.16 " +
+               "--deltaT 0.1 " +
+               "--startingAreaSize 12 " +
+               "--cellSpawnChance 0.3 " +
+               "--minInitialValue 0.2 " +
+               "--maxInitialValue 1.0 " +
+               "--growthSteepness 4.0 " +
+               "--outputDirectory 2D_Example " +
+               "--maxFrameTimeSeconds 2.0"
+});
 
-    // Example for 3D Simulation
-    simulations.Add(new Simulation
-    {
-        GeneratorPath = generator3DPath,
-        Arguments = "--numFrames 500 " +
-                    "--kernelRadius 6 " +
-                    "--kernelSigmaMultiplier 0.175 " +
-                    "--growthSigmaMultiplier 0.004 " +
-                    "--center 0.16 " +
-                    "--deltaT 0.1 " +
-                    "--startingAreaSize 8 " +
-                    "--cellSpawnChance 0.4 " +
-                    "--minInitialValue 0.2 " +
-                    "--maxInitialValue 1.0 " +
-                    "--growthSteepness 4.0 " +
-                    "--outputDirectory 3D_Example " +
-                    "--maxFrameTimeSeconds 1.5"
-    });
-}
+// 3D Example
+simulations.Add(new Simulation
+{
+    GeneratorPath = generator3DPath,
+    Arguments = "--numFrames 100 " +
+               "--kernelRadius 6 " +
+               "--kernelSigmaMultiplier 0.175 " +
+               "--growthSigmaMultiplier 0.004 " +
+               "--center 0.16 " +
+               "--deltaT 0.1 " +
+               "--startingAreaSize 8 " +
+               "--cellSpawnChance 0.4 " +
+               "--minInitialValue 0.2 " +
+               "--maxInitialValue 1.0 " +
+               "--growthSteepness 4.0 " +
+               "--outputDirectory 3D_Example " +
+               "--maxFrameTimeSeconds 1.5"
+});
+
+// 4D Example
+simulations.Add(new Simulation
+{
+    GeneratorPath = generator4DPath,
+    Arguments = "--numFrames 75 " +
+               "--kernelRadius 4 " +
+               "--kernelSigmaMultiplier 0.125 " +
+               "--growthSigmaMultiplier 0.012 " +
+               "--center 0.15 " +
+               "--deltaT 0.1 " +
+               "--startingAreaSize 6 " +
+               "--cellSpawnChance 0.5 " +
+               "--minInitialValue 0.2 " +
+               "--maxInitialValue 1.0 " +
+               "--growthSteepness 4.0 " +
+               "--outputDirectory 4D_Example " +
+               "--maxFrameTimeSeconds 5.0"
+});
 ```
 
-You can uncomment or add different configurations for 2D, 3D, and 4D simulations to explore a wide range of parameters.
+#### Running Random Simulations:
+```csharp
+// Set number of simulations to run
+int nSimulations = 1;
+
+// Run simulations for each dimension
+Run2DSimulations(generator2DPath, nSimulations);
+Run3DSimulations(generator3DPath, nSimulations);
+Run4DSimulations(generator4DPath, nSimulations);
+```
+
+#### Random Simulation Parameter Ranges:
+When using the Run[2/3/4]DSimulations methods, parameters are randomly generated within these ranges:
+
+- **2D Simulations:**
+  - Kernel Radius: 5-20
+  - Cell Spawn Chance: 0.2-0.45
+  - Starting Area Size: Based on radius × multiplier (0.75-2.5)
+
+- **3D Simulations:**
+  - Kernel Radius: 2-7
+  - Cell Spawn Chance: 0.3-0.6
+  - Starting Area Size: Based on radius × multiplier (0.75-2.0)
+
+- **4D Simulations:**
+  - Kernel Radius: 3-6
+  - Cell Spawn Chance: 0.4-0.8
+  - Starting Area Size: Based on radius × multiplier (0.75-1.75)
 
 ### Output and Visualization
 - Simulations will output data into folders in the `output` directory.

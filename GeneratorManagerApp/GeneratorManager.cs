@@ -56,9 +56,76 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
-        Run2DSimulations(generator2DPath, 1);
-        Run3DSimulations(generator3DPath, 1);
-        Run4DSimulations(generator4DPath, 1);
+        /*
+            run multiple simulations with randomly generated parameters
+
+            int nSimulations = 1;
+
+            Run2DSimulations(generator2DPath, nSimulations);
+            Run3DSimulations(generator3DPath, nSimulations);
+            Run4DSimulations(generator4DPath, nSimulations);
+        */
+
+        /*
+            Or add a single simulation here:
+
+            // 2D Example
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator2DPath,
+                Arguments = "--numFrames 75 " +
+                           "--kernelRadius 9 " +
+                           "--kernelSigmaMultiplier 0.175 " +
+                           "--growthSigmaMultiplier 0.004 " +
+                           "--center 0.16 " +
+                           "--deltaT 0.1 " +
+                           "--startingAreaSize 12 " +
+                           "--cellSpawnChance 0.3 " +
+                           "--minInitialValue 0.2 " +
+                           "--maxInitialValue 1.0 " +
+                           "--growthSteepness 4.0 " +
+                           "--outputDirectory 2D_Example " +
+                           "--maxFrameTimeSeconds 2.0"
+            });
+
+            // 3D Example
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator3DPath,
+                Arguments = "--numFrames 100 " +
+                           "--kernelRadius 6 " +
+                           "--kernelSigmaMultiplier 0.175 " +
+                           "--growthSigmaMultiplier 0.004 " +
+                           "--center 0.16 " +
+                           "--deltaT 0.1 " +
+                           "--startingAreaSize 8 " +
+                           "--cellSpawnChance 0.4 " +
+                           "--minInitialValue 0.2 " +
+                           "--maxInitialValue 1.0 " +
+                           "--growthSteepness 4.0 " +
+                           "--outputDirectory 3D_Example " +
+                           "--maxFrameTimeSeconds 1.5"
+            });
+
+            // 4D Example
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator4DPath,
+                Arguments = "--numFrames 75 " +
+                           "--kernelRadius 4 " +
+                           "--kernelSigmaMultiplier 0.125 " +
+                           "--growthSigmaMultiplier 0.012 " +
+                           "--center 0.15 " +
+                           "--deltaT 0.1 " +
+                           "--startingAreaSize 6 " +
+                           "--cellSpawnChance 0.5 " +
+                           "--minInitialValue 0.2 " +
+                           "--maxInitialValue 1.0 " +
+                           "--growthSteepness 4.0 " +
+                           "--outputDirectory 4D_Example " +
+                           "--maxFrameTimeSeconds 5.0"
+            });
+        */
     }
 
     private void Run2DSimulations(string generator2DPath, int nSimulations)
@@ -95,7 +162,7 @@ public class GeneratorManager
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator2DPath,
-                Arguments = "--numFrames 50 " +
+                Arguments = "--numFrames 75 " +
                            $"--kernelRadius {radius} " +
                            $"--kernelSigmaMultiplier {kernelSigmaMultiplier:F4} " + 
                            $"--growthSigmaMultiplier {growthSigmaMultiplier:F4} " +
@@ -156,7 +223,7 @@ public class GeneratorManager
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator3DPath,
-                Arguments = "--numFrames 50 " +
+                Arguments = "--numFrames 75 " +
                            $"--kernelRadius {radius} " +
                            $"--kernelSigmaMultiplier {kernelSigmaMultiplier:F4} " +
                            $"--growthSigmaMultiplier {growthSigmaMultiplier:F4} " +
@@ -168,7 +235,7 @@ public class GeneratorManager
                            "--maxInitialValue 1.0 " +
                            $"--growthSteepness {growthSteepness:F2} " +
                            $"--outputDirectory {Path.Combine(OUTPUTS_DIR, THREE_D_DIR, simName)} " +
-                           "--maxFrameTimeSeconds 2.5"
+                           "--maxFrameTimeSeconds 2"
             });
 
             multiplierIndex++;
@@ -190,7 +257,7 @@ public class GeneratorManager
     {
         Random random = new Random(44);  // Different seed from 2D and 3D
 
-        int[] radiusValues = { 2, 3, 4, 5 };  // Smaller than 3D due to tesseract growth
+        int[] radiusValues = { 3, 4, 6 };  
         double[] radiusMultipliers = { 1.75, 1.25, 0.75 };
         int simulationCount = 0;
 
@@ -216,7 +283,7 @@ public class GeneratorManager
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator4DPath,
-                Arguments = "--numFrames 50 " +
+                Arguments = "--numFrames 75 " +
                            $"--kernelRadius {radius} " +
                            $"--kernelSigmaMultiplier {kernelSigmaMultiplier:F4} " +
                            $"--growthSigmaMultiplier {growthSigmaMultiplier:F4} " +
@@ -228,7 +295,7 @@ public class GeneratorManager
                            "--maxInitialValue 1.0 " +
                            $"--growthSteepness {growthSteepness:F2} " +
                            $"--outputDirectory {Path.Combine(OUTPUTS_DIR, FOUR_D_DIR, simName)} " +
-                           "--maxFrameTimeSeconds 3.0"
+                           "--maxFrameTimeSeconds 5.0"
             });
 
             multiplierIndex++;
