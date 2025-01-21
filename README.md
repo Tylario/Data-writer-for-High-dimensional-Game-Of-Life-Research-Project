@@ -149,20 +149,37 @@ Survival and birth thresholds are adjusted based on the increased number of neig
 
 ### Continuous Cellular Automata and Kernels
 Instead of binary states (0 or 1), cells can take continuous values between 0 and 1. The next state of a cell depends on a weighted sum of its neighbors, computed using convolution kernels:
-1. **Kernel Function:** 
-   - A Gaussian function centered at the cell, decreasing in influence outward.
-   - Circular in 2D, spherical in 3D, and hyperspherical in 4D.
 
-2. **Convolution Calculation:**
-   - Computes a weighted sum of neighboring cell values based on kernel weights.
-   - Normalizes the sum to ensure balance.
+1. **State Transition Equation:**
+   ```
+   A(t+1) = clamp[0,1]( A(t) + Δt * (2G(K*A(t)) - 1) )
+   ```
+   Where A(t) is the cell state at time t, Δt is the time step, G is the growth function, K is the kernel function, and * denotes convolution.
+
+2. **Kernel Function:**
+   ```
+   K(r) = exp(-(r - r₀)² / (2σₖ²))
+   ```
+   - Gaussian function centered at r₀ = kernelRadius/2
+   - σₖ = kernelRadius * kernelSigmaMultiplier
+   - Circular in 2D, spherical in 3D, and hyperspherical in 4D
 
 3. **Growth Function:**
-   - Controls cell behavior using parameters like center value and growth steepness.
-   - Cells grow if their convolution value is near a specified target range.
+   ```
+   G(x) = exp(-s(x - c)² / (2σᵧ²))
+   ```
+   - x is the convolution value
+   - c is the center (target density)
+   - s is the growth steepness
+   - σᵧ = kernelRadius * growthSigmaMultiplier
 
-4. **Time-Stepping:**
-   - Updates states continuously using a time step (`deltaT`) to simulate smooth transitions.
+4. **Key Parameters:**
+   - `kernelRadius`: Size of neighborhood influence
+   - `kernelSigmaMultiplier`: Controls kernel spread
+   - `growthSigmaMultiplier`: Controls growth sensitivity
+   - `growthSteepness`: Controls sharpness of growth response
+   - `center`: Target density for stable growth
+   - `deltaT`: Time step size for state updates
 
 ---
 

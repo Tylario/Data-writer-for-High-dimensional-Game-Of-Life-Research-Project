@@ -57,7 +57,7 @@ public class GeneratorManager
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
         /*
-            run multiple simulations with randomly generated parameters
+            //run multiple simulations with randomly generated parameters
 
             int nSimulations = 1;
 
@@ -67,9 +67,8 @@ public class GeneratorManager
         */
 
         /*
-            Or add a single simulation here:
+            //Or add a single simulation here:
 
-            // 2D Example
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator2DPath,
@@ -88,7 +87,6 @@ public class GeneratorManager
                            "--maxFrameTimeSeconds 2.0"
             });
 
-            // 3D Example
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator3DPath,
@@ -107,7 +105,6 @@ public class GeneratorManager
                            "--maxFrameTimeSeconds 1.5"
             });
 
-            // 4D Example
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator4DPath,
@@ -295,7 +292,7 @@ public class GeneratorManager
                            "--maxInitialValue 1.0 " +
                            $"--growthSteepness {growthSteepness:F2} " +
                            $"--outputDirectory {Path.Combine(OUTPUTS_DIR, FOUR_D_DIR, simName)} " +
-                           "--maxFrameTimeSeconds 5.0"
+                           "--maxFrameTimeSeconds 6.0"
             });
 
             multiplierIndex++;
