@@ -181,7 +181,7 @@ namespace Generator2D
         void PrecomputeFrames()
         {
             string baseOutputPath = outputDirectory;
-            string endBehavior = "";
+            string behavior = "";
             
             // Create base directory first
             string fullOutputPath = Path.GetFullPath(outputDirectory);
@@ -201,7 +201,7 @@ namespace Generator2D
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_exploded";
+                    behavior = "timed_out";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -209,23 +209,28 @@ namespace Generator2D
                 // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
-                    Console.WriteLine("No cells remaining, simulation died.");
+                    behavior = i < 25 ? "died" : "lived";
+                    Console.WriteLine($"No cells remaining after {i} frames.");
                     break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's unstable
-            if (string.IsNullOrEmpty(endBehavior))
+            // If we completed all frames without timing out or dying, it's unstable
+            if (string.IsNullOrEmpty(behavior))
             {
-                endBehavior = "_unstable";
+                behavior = "unstable";
             }
 
-            // Update the path handling
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.GetFullPath(newOutputPath);
+            // Create the parent directory of the output directory if it doesn't exist
+            string parentDir = Path.GetDirectoryName(Path.GetFullPath(baseOutputPath));
+            string behaviorPath = Path.Combine(parentDir, behavior);
+            Directory.CreateDirectory(behaviorPath);
+
+            // Generate unique subfolder name
+            string simName = Path.GetFileName(baseOutputPath);
+            string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
             // If the new path already exists, delete it
             if (Directory.Exists(newFullOutputPath))
@@ -233,11 +238,11 @@ namespace Generator2D
                 Directory.Delete(newFullOutputPath, true);
             }
             
-            // Rename the directory
+            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            outputDirectory = newFullOutputPath;
 
-            Console.WriteLine($"2D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Console.WriteLine($"2D Lenia simulation completed with behavior: {behavior}");
             Console.WriteLine($"Output saved to: {newFullOutputPath}");
         }
 

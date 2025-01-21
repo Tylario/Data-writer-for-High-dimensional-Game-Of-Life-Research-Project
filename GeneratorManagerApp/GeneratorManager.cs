@@ -56,13 +56,16 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
+        Run2DSimulations(generator2DPath, 3);
+    }
+
+    private void Run2DSimulations(string generator2DPath, int nSimulations)
+    {
         // Initialize random with fixed seed for reproducibility
         Random random = new Random(42);
 
-        // 2D Example
-        int nSimulations = 10; // Change this to control number of simulations
         int[] radiusValues = { 5, 9, 14, 20 };
-        double[] radiusMultipliers = { 1.0, 0.5, 0.25 };
+        double[] radiusMultipliers = { 2.5, 1.25, 0.75 };
         int simulationCount = 0;
 
         // Systematically iterate through radius values and multipliers
@@ -74,12 +77,12 @@ public class GeneratorManager
             // Get current radius and multiplier
             int radius = radiusValues[radiusIndex];
             double radiusMultiplier = radiusMultipliers[multiplierIndex];
-            int startingAreaSize = (int)(2.5 * radius * radiusMultiplier);
+            int startingAreaSize = (int)(radius * radiusMultiplier);
 
             // Randomly modify parameters with 50/25/25 distribution
             double kernelSigmaMultiplier = random.NextDouble() < 0.5 ? 0.175 : (random.NextDouble() < 0.5 ? 0.175 * 1.25 : 0.175 * 0.75);
             double growthSigmaMultiplier = random.NextDouble() < 0.5 ? 0.004 : (random.NextDouble() < 0.5 ? 0.004 * 1.25 : 0.004 * 0.75);
-            double cellSpawnChance = random.NextDouble() < 0.5 ? 0.3 : (random.NextDouble() < 0.5 ? 0.3 * 1.25 : 0.3 * 0.75);
+            double cellSpawnChance = 0.2 + (random.NextDouble() * 0.25); // Random value between 0.2 and 0.45
             double growthSteepness = random.NextDouble() < 0.5 ? 4.0 : (random.NextDouble() < 0.5 ? 4.0 * 1.25 : 4.0 * 0.75);
             double center = random.NextDouble() < 0.5 ? 0.16 : (random.NextDouble() < 0.5 ? 0.16 * 1.25 : 0.16 * 0.75);
 
@@ -120,7 +123,6 @@ public class GeneratorManager
             simulationCount++;
         }
     }
-    
 
     public async Task RunSimulations()
     {
