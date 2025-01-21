@@ -53,10 +53,11 @@ private void InitializeSimulations()
 You can uncomment or add different configurations for 2D, 3D, and 4D simulations to explore a wide range of parameters.
 
 ### Output and Visualization
-- Simulations will output data into folders specified in the configuration (e.g., `outputDirectory`).
-- Open `viewer.html` in your browser to view and interact with the simulations.
+- Simulations will output data into folders in the `output` directory.
+- Open `viewer.html` in your browser to view and interact with the simulations. Select all the frames you want to include in the render.
 
 #### Controls:
+- **2D Simulations:** Use scroll wheel to zoom in and out.
 - **3D Simulations:** Use `WASD` for movement, `QE` for vertical adjustments, and mouse for rotation.
 - **4D Simulations:** Same controls as 3D, with additional options to toggle the `W` axis view.
 

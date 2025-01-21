@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj": {}
+    "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj": {
+    "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj",
+        "projectUniqueName": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj",
         "projectName": "Generator4DApp",
-        "projectPath": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj",
-        "packagesPath": "C:\\Users\\thudso27\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\thudso27\\Documents\\GitHub\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\obj\\",
+        "projectPath": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\Generator4DApp.csproj",
+        "packagesPath": "C:\\Users\\Tyler\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Tyler\\Desktop\\Data-writer-for-High-dimensional-Game-Of-Life-Research-Project\\Generator4DApp\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\thudso27\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Tyler\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -32,13 +32,7 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "true",
-          "auditLevel": "low",
-          "auditMode": "all"
-        },
-        "SdkAnalysisLevel": "9.0.100"
+        }
       },
       "frameworks": {
         "net8.0": {
@@ -59,7 +53,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

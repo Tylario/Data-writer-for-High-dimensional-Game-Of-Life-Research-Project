@@ -184,7 +184,7 @@ namespace Generator2D
             string endBehavior = "";
             
             // Create base directory first
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            string fullOutputPath = Path.GetFullPath(outputDirectory);
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
@@ -223,9 +223,9 @@ namespace Generator2D
                 endBehavior = "_unstable";
             }
 
-            // Rename the directory with the end behavior
+            // Update the path handling
             string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            string newFullOutputPath = Path.GetFullPath(newOutputPath);
             
             // If the new path already exists, delete it
             if (Directory.Exists(newFullOutputPath))
@@ -238,11 +238,12 @@ namespace Generator2D
             outputDirectory = newOutputPath;
 
             Console.WriteLine($"2D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Console.WriteLine($"Output saved to: {newFullOutputPath}");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector2Int, float> frameData)
         {
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            string fullOutputPath = Path.GetFullPath(outputDirectory);
             string filePath = Path.Combine(fullOutputPath, $"frame_{frameIndex}.json");
 
             CellData[] cells = new CellData[frameData.Count];

@@ -42,6 +42,11 @@
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border-radius: 8px;
+            transition: opacity 0.3s ease;
+        }
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
         input[type="file"] {
             color: white;
@@ -155,10 +160,19 @@
         let wMin = 0, wMax = 0;
         let dimensions = 0;
         let globalMinX = 0, globalMaxX = 0, globalMinY = 0, globalMaxY = 0;
+        let isFullscreen = false;
         
         const canvas = document.getElementById('leniaCanvas');
         const ctx = canvas.getContext('2d');
         const frameCounter = document.getElementById('frameCounter');
+        const controlsElement = document.querySelector('.controls');
+        
+        // Simplified zoom state
+        let currentScale = 1;
+        let targetScale = 1;
+        const ZOOM_FACTOR = 0.1;
+        const SCALE_CHANGE_SPEED = 0.15;
+        let animationFrameId = null;
         
         // Initialize Three.js scene for 3D/4D
         function init3D() {
@@ -215,12 +229,18 @@
             }
             canvas.style.display = 'block';
             
+            // Reset zoom state
+            currentScale = 1;
+            targetScale = 1;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
             // Set up 2D canvas using global bounds
             const baseSize = Math.min(window.innerWidth * 0.99, window.innerHeight * 0.95);
-            const scale = Math.floor(1080 / baseSize);
-            const canvasSize = baseSize * scale;
-            canvas.width = canvasSize;
-            canvas.height = canvasSize;
+            canvas.width = baseSize;
+            canvas.height = baseSize;
         }
 
         function detectDimensions(frameData) {
@@ -313,27 +333,47 @@
             return cube;
         }
 
+        function smoothScale() {
+            if (Math.abs(targetScale - currentScale) > 0.001) {
+                currentScale += (targetScale - currentScale) * SCALE_CHANGE_SPEED;
+                console.log('Updating scale:', currentScale);
+                drawFrame(currentFrame);
+                animationFrameId = requestAnimationFrame(smoothScale);
+            } else {
+                console.log('Animation complete');
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
         function draw2DFrame(frameIndex) {
             const frame = frames[frameIndex];
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Calculate the base scale to fit the simulation in the canvas
             const width = globalMaxX - globalMinX;
             const height = globalMaxY - globalMinY;
-            const scale = Math.min(
+            const baseScale = Math.min(
                 (canvas.width * 0.9) / width,
                 (canvas.height * 0.9) / height
             );
             
-            const pixelScale = Math.max(1, Math.floor(scale));
-            const offsetX = Math.floor((canvas.width - width * pixelScale) / 2);
-            const offsetY = Math.floor((canvas.height - height * pixelScale) / 2);
+            // Apply current scale factor
+            const finalScale = baseScale * currentScale;
+            
+            // Center the simulation
+            const offsetX = (canvas.width - width * finalScale) / 2;
+            const offsetY = (canvas.height - height * finalScale) / 2;
 
+            // Draw cells
             frame.cells.forEach(cell => {
-                const x = Math.floor((cell.x - globalMinX) * pixelScale) + offsetX;
-                const y = Math.floor((cell.y - globalMinY) * pixelScale) + offsetY;
+                const x = (cell.x - globalMinX) * finalScale + offsetX;
+                const y = (cell.y - globalMinY) * finalScale + offsetY;
+                const cellSize = Math.max(1, finalScale);
+                
                 ctx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
-                ctx.fillRect(x, y, pixelScale, pixelScale);
+                ctx.fillRect(x, y, cellSize, cellSize);
             });
         }
 
@@ -477,6 +517,54 @@
                 drawFrame(currentFrame);
             }
         });
+
+        // Fullscreen toggle with F key
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'f') {
+                isFullscreen = !isFullscreen;
+                
+                if (isFullscreen) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                    }
+                    controlsElement.classList.add('hidden');
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                    controlsElement.classList.remove('hidden');
+                }
+            }
+        });
+
+        // Move wheel event listener to window level and add checks
+        window.addEventListener('wheel', (e) => {
+            if (dimensions !== 2) return;
+            
+            // Check if mouse is over controls
+            const controlsElement = document.querySelector('.controls');
+            if (controlsElement.contains(e.target)) return;
+            
+            e.preventDefault();
+            
+            // Debug logs
+            console.log('Wheel event detected');
+            console.log('Current target:', e.target);
+            console.log('Current scale:', currentScale);
+            console.log('Delta Y:', e.deltaY);
+            
+            // Update target scale based on wheel direction
+            const scaleFactor = e.deltaY > 0 ? (1 - ZOOM_FACTOR) : (1 + ZOOM_FACTOR);
+            targetScale *= scaleFactor;
+            
+            console.log('New target scale:', targetScale);
+            
+            // Start smooth scale animation if not already running
+            if (!animationFrameId) {
+                console.log('Starting animation');
+                smoothScale();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>

@@ -2,9 +2,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.IO;
 
 public class GeneratorManager
 {
+    private const string OUTPUTS_DIR = "outputs";
+    private const string COOL_SIMULATIONS_DIR = "cool_simulations";
+    private const string TWO_D_DIR = "2D";
+    private const string THREE_D_DIR = "3D";
+    private const string FOUR_D_DIR = "4D";
+
     // Define a class to hold simulation parameters
     public class Simulation
     {
@@ -17,8 +24,28 @@ public class GeneratorManager
 
     public GeneratorManager()
     {
-        // Initialize simulations
+        // Initialize directories
+        EnsureDirectoryStructure();
         InitializeSimulations();
+    }
+
+    private void EnsureDirectoryStructure()
+    {
+        // Create main directories
+        var directories = new[]
+        {
+            Path.Combine(OUTPUTS_DIR, TWO_D_DIR),
+            Path.Combine(OUTPUTS_DIR, THREE_D_DIR),
+            Path.Combine(OUTPUTS_DIR, FOUR_D_DIR),
+            Path.Combine(COOL_SIMULATIONS_DIR, TWO_D_DIR),
+            Path.Combine(COOL_SIMULATIONS_DIR, THREE_D_DIR),
+            Path.Combine(COOL_SIMULATIONS_DIR, FOUR_D_DIR)
+        };
+
+        foreach (var dir in directories)
+        {
+            Directory.CreateDirectory(dir);
+        }
     }
 
     private void InitializeSimulations()
@@ -146,6 +173,29 @@ public class GeneratorManager
     
         */
 
+        for (int i = 0; i < 1; i++)
+        {
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator2DPath,
+                Arguments = "--numFrames 50 " +
+                            "--kernelRadius 20 " +
+                            "--kernelSigmaMultiplier 0.175 " + 
+                            "--growthSigmaMultiplier 0.004 " +
+                            "--center 0.16 " +
+                            "--deltaT 0.1 " +
+                            "--startingAreaSize 90 " +
+                            "--cellSpawnChance 0.3 " +
+                            "--minInitialValue 0.2 " +
+                            "--maxInitialValue 1.0 " +
+                            "--growthSteepness 4.0 " +
+                            $"--outputDirectory {Path.Combine(OUTPUTS_DIR, TWO_D_DIR, $"2D_Example_{i}")} " +
+                            "--maxFrameTimeSeconds 2.0"
+            });
+        }
+
+
+        /*
         // 3D Example
 
         simulations.Add(new Simulation
@@ -165,8 +215,6 @@ public class GeneratorManager
                         "--outputDirectory 3D_Example " +
                         "--maxFrameTimeSeconds 1.5"
         });
-
-        /*
 
         simulations.Add(new Simulation
         {
@@ -246,5 +294,34 @@ public class GeneratorManager
     {
         GeneratorManager manager = new GeneratorManager();
         await manager.RunSimulations();
+    }
+
+    public static void MoveToCoolSimulations(string simulationPath)
+    {
+        // Determine the dimension from the path
+        string dimension;
+        if (simulationPath.Contains("/2D/") || simulationPath.Contains("\\2D\\"))
+            dimension = TWO_D_DIR;
+        else if (simulationPath.Contains("/3D/") || simulationPath.Contains("\\3D\\"))
+            dimension = THREE_D_DIR;
+        else if (simulationPath.Contains("/4D/") || simulationPath.Contains("\\4D\\"))
+            dimension = FOUR_D_DIR;
+        else
+            throw new ArgumentException("Cannot determine dimension from path");
+
+        // Get the simulation name
+        string simulationName = Path.GetFileName(simulationPath);
+        
+        // Construct the destination path
+        string destinationPath = Path.Combine(COOL_SIMULATIONS_DIR, dimension, simulationName);
+        
+        // If the destination already exists, delete it
+        if (Directory.Exists(destinationPath))
+            Directory.Delete(destinationPath, true);
+        
+        // Move the simulation to cool_simulations
+        Directory.Move(simulationPath, destinationPath);
+        
+        Console.WriteLine($"Moved simulation to cool_simulations: {destinationPath}");
     }
 }
