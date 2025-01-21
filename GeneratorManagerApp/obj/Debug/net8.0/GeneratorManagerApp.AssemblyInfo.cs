@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GeneratorManagerApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+19950136fdc8bdbe86015d0c790c2ba640881908")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+99cc19932594b5e8c322fda458489485599aea24")]
 [assembly: System.Reflection.AssemblyProductAttribute("GeneratorManagerApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GeneratorManagerApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

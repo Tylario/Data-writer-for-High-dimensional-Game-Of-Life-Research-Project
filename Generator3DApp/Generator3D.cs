@@ -150,6 +150,7 @@ namespace Generator3D
         {
             List<float> kernelValueList = new List<float>();
             kernelOffsetIndices = new Dictionary<Vector3Int, int>();
+            float r0 = kernelRadius / 2.0f;  // Changed from r0Squared
             float sum = 0.0f;
             int index = 0;
 
@@ -159,8 +160,9 @@ namespace Generator3D
                 {
                     for (int k = -kernelRadius; k <= kernelRadius; k++)
                     {
-                        float rSquared = i * i + j * j + k * k;
-                        float exponent = -(rSquared - kernelR0Squared) / (2 * kernelSigmaSquared);
+                        // Calculate actual radius instead of using squared values
+                        float r = (float)Math.Sqrt(i * i + j * j + k * k);
+                        float exponent = -((r - r0) * (r - r0)) / (2 * kernelSigma * kernelSigma);
                         float value = (float)Math.Exp(exponent);
 
                         Vector3Int offset = new Vector3Int(i, j, k);
@@ -298,6 +300,28 @@ namespace Generator3D
         {
             var convolutionValues = new ConcurrentDictionary<Vector3Int, float>();
 
+            // Find the bounds of all alive cells
+            int minX = int.MaxValue, minY = int.MaxValue, minZ = int.MaxValue;
+            int maxX = int.MinValue, maxY = int.MinValue, maxZ = int.MinValue;
+            
+            foreach (var pos in aliveCells.Keys)
+            {
+                minX = Math.Min(minX, pos.x);
+                minY = Math.Min(minY, pos.y);
+                minZ = Math.Min(minZ, pos.z);
+                maxX = Math.Max(maxX, pos.x);
+                maxY = Math.Max(maxY, pos.y);
+                maxZ = Math.Max(maxZ, pos.z);
+            }
+
+            // Expand bounds by kernel radius to include potential new cells
+            minX -= kernelRadius;
+            minY -= kernelRadius;
+            minZ -= kernelRadius;
+            maxX += kernelRadius;
+            maxY += kernelRadius;
+            maxZ += kernelRadius;
+
             // Compute convolution values by scattering contributions from alive cells
             Parallel.ForEach(aliveCells, aliveCellKvp =>
             {
@@ -307,11 +331,18 @@ namespace Generator3D
                 for (int idx = 0; idx < kernelOffsets.Count; idx++)
                 {
                     Vector3Int neighborPos = aliveCellPos + kernelOffsets[idx];
-                    float kernelValue = kernelValues[idx];
-                    float contribution = aliveCellValue * kernelValue;
+                    
+                    // Only process if within expanded bounds
+                    if (neighborPos.x >= minX && neighborPos.x <= maxX &&
+                        neighborPos.y >= minY && neighborPos.y <= maxY &&
+                        neighborPos.z >= minZ && neighborPos.z <= maxZ)
+                    {
+                        float kernelValue = kernelValues[idx];
+                        float contribution = aliveCellValue * kernelValue;
 
-                    // Update convolution value atomically
-                    convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
+                        // Update convolution value atomically
+                        convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
+                    }
                 }
             });
 

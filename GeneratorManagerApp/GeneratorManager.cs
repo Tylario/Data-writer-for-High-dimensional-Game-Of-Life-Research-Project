@@ -56,9 +56,9 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
-        Run2DSimulations(generator2DPath, 0);
-        Run3DSimulations(generator3DPath, 5);
-        Run4DSimulations(generator4DPath, 0);
+        Run2DSimulations(generator2DPath, 1);
+        Run3DSimulations(generator3DPath, 1);
+        Run4DSimulations(generator4DPath, 1);
     }
 
     private void Run2DSimulations(string generator2DPath, int nSimulations)
@@ -130,7 +130,7 @@ public class GeneratorManager
     {
         Random random = new Random(43);  // Different seed from 2D
 
-        int[] radiusValues = { 4, 6, 8, 10 };  // Smaller than 2D due to cubic growth
+        int[] radiusValues = { 2, 4, 5, 7 };  
         double[] radiusMultipliers = { 2.0, 1.25, 0.75 };
         int simulationCount = 0;
 
