@@ -56,7 +56,9 @@ public class GeneratorManager
         string generator3DPath = @"./Generator3DApp/bin/Debug/net8.0/Generator3DApp";
         string generator4DPath = @"./Generator4DApp/bin/Debug/net8.0/Generator4DApp";
 
-        Run2DSimulations(generator2DPath, 3);
+        Run2DSimulations(generator2DPath, 0);
+        Run3DSimulations(generator3DPath, 5);
+        Run4DSimulations(generator4DPath, 0);
     }
 
     private void Run2DSimulations(string generator2DPath, int nSimulations)
@@ -109,6 +111,126 @@ public class GeneratorManager
             });
 
             // Increment indices
+            multiplierIndex++;
+            if (multiplierIndex >= radiusMultipliers.Length)
+            {
+                multiplierIndex = 0;
+                radiusIndex++;
+                if (radiusIndex >= radiusValues.Length)
+                {
+                    radiusIndex = 0;
+                }
+            }
+
+            simulationCount++;
+        }
+    }
+
+    private void Run3DSimulations(string generator3DPath, int nSimulations)
+    {
+        Random random = new Random(43);  // Different seed from 2D
+
+        int[] radiusValues = { 4, 6, 8, 10 };  // Smaller than 2D due to cubic growth
+        double[] radiusMultipliers = { 2.0, 1.25, 0.75 };
+        int simulationCount = 0;
+
+        int radiusIndex = 0;
+        int multiplierIndex = 0;
+
+        while (simulationCount < nSimulations)
+        {
+            int radius = radiusValues[radiusIndex];
+            double radiusMultiplier = radiusMultipliers[multiplierIndex];
+            int startingAreaSize = (int)(radius * radiusMultiplier);
+
+            double kernelSigmaMultiplier = random.NextDouble() < 0.5 ? 0.175 : (random.NextDouble() < 0.5 ? 0.175 * 1.25 : 0.175 * 0.75);
+            double growthSigmaMultiplier = random.NextDouble() < 0.5 ? 0.004 : (random.NextDouble() < 0.5 ? 0.004 * 1.25 : 0.004 * 0.75);
+            double cellSpawnChance = 0.3 + (random.NextDouble() * 0.3); // Random value between 0.3 and 0.6
+            double growthSteepness = random.NextDouble() < 0.5 ? 4.0 : (random.NextDouble() < 0.5 ? 4.0 * 1.25 : 4.0 * 0.75);
+            double center = random.NextDouble() < 0.5 ? 0.16 : (random.NextDouble() < 0.5 ? 0.16 * 1.25 : 0.16 * 0.75);
+
+            string simName = $"3D_R{radius}_RM{radiusMultiplier:F2}_SAS{startingAreaSize}_" +
+                           $"KSM{kernelSigmaMultiplier:F4}_GSM{growthSigmaMultiplier:F4}_" +
+                           $"CSC{cellSpawnChance:F2}_GS{growthSteepness:F2}_C{center:F2}";
+
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator3DPath,
+                Arguments = "--numFrames 50 " +
+                           $"--kernelRadius {radius} " +
+                           $"--kernelSigmaMultiplier {kernelSigmaMultiplier:F4} " +
+                           $"--growthSigmaMultiplier {growthSigmaMultiplier:F4} " +
+                           $"--center {center:F2} " +
+                           "--deltaT 0.1 " +
+                           $"--startingAreaSize {startingAreaSize} " +
+                           $"--cellSpawnChance {cellSpawnChance:F2} " +
+                           "--minInitialValue 0.2 " +
+                           "--maxInitialValue 1.0 " +
+                           $"--growthSteepness {growthSteepness:F2} " +
+                           $"--outputDirectory {Path.Combine(OUTPUTS_DIR, THREE_D_DIR, simName)} " +
+                           "--maxFrameTimeSeconds 2.5"
+            });
+
+            multiplierIndex++;
+            if (multiplierIndex >= radiusMultipliers.Length)
+            {
+                multiplierIndex = 0;
+                radiusIndex++;
+                if (radiusIndex >= radiusValues.Length)
+                {
+                    radiusIndex = 0;
+                }
+            }
+
+            simulationCount++;
+        }
+    }
+
+    private void Run4DSimulations(string generator4DPath, int nSimulations)
+    {
+        Random random = new Random(44);  // Different seed from 2D and 3D
+
+        int[] radiusValues = { 2, 3, 4, 5 };  // Smaller than 3D due to tesseract growth
+        double[] radiusMultipliers = { 1.75, 1.25, 0.75 };
+        int simulationCount = 0;
+
+        int radiusIndex = 0;
+        int multiplierIndex = 0;
+
+        while (simulationCount < nSimulations)
+        {
+            int radius = radiusValues[radiusIndex];
+            double radiusMultiplier = radiusMultipliers[multiplierIndex];
+            int startingAreaSize = (int)(radius * radiusMultiplier);
+
+            double kernelSigmaMultiplier = random.NextDouble() < 0.5 ? 0.125 : (random.NextDouble() < 0.5 ? 0.125 * 1.25 : 0.125 * 0.75);
+            double growthSigmaMultiplier = random.NextDouble() < 0.5 ? 0.012 : (random.NextDouble() < 0.5 ? 0.012 * 1.25 : 0.012 * 0.75);
+            double cellSpawnChance = 0.4 + (random.NextDouble() * 0.4); // Random value between 0.4 and 0.8
+            double growthSteepness = random.NextDouble() < 0.5 ? 4.0 : (random.NextDouble() < 0.5 ? 4.0 * 1.25 : 4.0 * 0.75);
+            double center = random.NextDouble() < 0.5 ? 0.15 : (random.NextDouble() < 0.5 ? 0.15 * 1.25 : 0.15 * 0.75);
+
+            string simName = $"4D_R{radius}_RM{radiusMultiplier:F2}_SAS{startingAreaSize}_" +
+                           $"KSM{kernelSigmaMultiplier:F4}_GSM{growthSigmaMultiplier:F4}_" +
+                           $"CSC{cellSpawnChance:F2}_GS{growthSteepness:F2}_C{center:F2}";
+
+            simulations.Add(new Simulation
+            {
+                GeneratorPath = generator4DPath,
+                Arguments = "--numFrames 50 " +
+                           $"--kernelRadius {radius} " +
+                           $"--kernelSigmaMultiplier {kernelSigmaMultiplier:F4} " +
+                           $"--growthSigmaMultiplier {growthSigmaMultiplier:F4} " +
+                           $"--center {center:F2} " +
+                           "--deltaT 0.1 " +
+                           $"--startingAreaSize {startingAreaSize} " +
+                           $"--cellSpawnChance {cellSpawnChance:F2} " +
+                           "--minInitialValue 0.2 " +
+                           "--maxInitialValue 1.0 " +
+                           $"--growthSteepness {growthSteepness:F2} " +
+                           $"--outputDirectory {Path.Combine(OUTPUTS_DIR, FOUR_D_DIR, simName)} " +
+                           "--maxFrameTimeSeconds 3.0"
+            });
+
             multiplierIndex++;
             if (multiplierIndex >= radiusMultipliers.Length)
             {

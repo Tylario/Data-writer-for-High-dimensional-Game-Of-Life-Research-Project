@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Generator4DApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1b822b6da4a8509f26635497ace6b3b6727bab6f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+19950136fdc8bdbe86015d0c790c2ba640881908")]
 [assembly: System.Reflection.AssemblyProductAttribute("Generator4DApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Generator4DApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

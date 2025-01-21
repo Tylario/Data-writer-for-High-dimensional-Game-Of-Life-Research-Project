@@ -194,17 +194,15 @@ namespace Generator4D
         void PrecomputeFrames()
         {
             string baseOutputPath = outputDirectory;
-            string endBehavior = "";
+            string behavior = "";
             
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            string fullOutputPath = Path.GetFullPath(outputDirectory);
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
 
             for (int i = 0; i < numFrames; i++)
             {
-                Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
-                
                 sw.Restart();
                 
                 SaveFrameToFile(i, aliveCells);
@@ -212,40 +210,52 @@ namespace Generator4D
                 
                 sw.Stop();
                 
+                // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_exploded";
+                    behavior = "timed_out";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
 
+                // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
-                    Console.WriteLine("No cells remaining, simulation died.");
+                    behavior = i < 25 ? "died" : "lived";
+                    Console.WriteLine($"No cells remaining after {i} frames.");
                     break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            if (string.IsNullOrEmpty(endBehavior))
+            // If we completed all frames without timing out or dying, it's unstable
+            if (string.IsNullOrEmpty(behavior))
             {
-                endBehavior = "_unstable";
+                behavior = "unstable";
             }
 
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            // Create the parent directory of the output directory if it doesn't exist
+            string parentDir = Path.GetDirectoryName(Path.GetFullPath(baseOutputPath));
+            string behaviorPath = Path.Combine(parentDir, behavior);
+            Directory.CreateDirectory(behaviorPath);
+
+            // Generate unique subfolder name
+            string simName = Path.GetFileName(baseOutputPath);
+            string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
+            // If the new path already exists, delete it
             if (Directory.Exists(newFullOutputPath))
             {
                 Directory.Delete(newFullOutputPath, true);
             }
             
+            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            outputDirectory = newFullOutputPath;
 
-            Console.WriteLine($"4D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Console.WriteLine($"4D Lenia simulation completed with behavior: {behavior}");
+            Console.WriteLine($"Output saved to: {newFullOutputPath}");
         }
 
         async Task SaveFrameToFile(int frameIndex, Dictionary<Vector4Int, float> frameData)

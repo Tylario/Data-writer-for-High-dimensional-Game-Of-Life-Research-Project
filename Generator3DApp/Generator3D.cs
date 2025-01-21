@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Generator3D
 {
@@ -204,19 +205,16 @@ namespace Generator3D
         void PrecomputeFrames()
         {
             string baseOutputPath = outputDirectory;
-            string endBehavior = "";
+            string behavior = "";
             
             // Create base directory first
-            string fullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), outputDirectory);
+            string fullOutputPath = Path.GetFullPath(outputDirectory);
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
 
-            // Parallel processing of frames
             for (int i = 0; i < numFrames; i++)
             {
-                Console.WriteLine($"Rendering Frame {i + 1}/{numFrames}...");
-                
                 sw.Restart();
                 
                 SaveFrameToFile(i, aliveCells);
@@ -227,7 +225,7 @@ namespace Generator3D
                 // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
-                    endBehavior = "_exploded";
+                    behavior = "timed_out";
                     Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
@@ -235,23 +233,28 @@ namespace Generator3D
                 // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    endBehavior = "_dead";
-                    Console.WriteLine("No cells remaining, simulation died.");
+                    behavior = i < 25 ? "died" : "lived";
+                    Console.WriteLine($"No cells remaining after {i} frames.");
                     break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without exploding or dying, it's unstable
-            if (string.IsNullOrEmpty(endBehavior))
+            // If we completed all frames without timing out or dying, it's unstable
+            if (string.IsNullOrEmpty(behavior))
             {
-                endBehavior = "_unstable";
+                behavior = "unstable";
             }
 
-            // Rename the directory with the end behavior
-            string newOutputPath = baseOutputPath + endBehavior;
-            string newFullOutputPath = Path.Combine(Directory.GetCurrentDirectory(), newOutputPath);
+            // Create the parent directory of the output directory if it doesn't exist
+            string parentDir = Path.GetDirectoryName(Path.GetFullPath(baseOutputPath));
+            string behaviorPath = Path.Combine(parentDir, behavior);
+            Directory.CreateDirectory(behaviorPath);
+
+            // Generate unique subfolder name
+            string simName = Path.GetFileName(baseOutputPath);
+            string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
             // If the new path already exists, delete it
             if (Directory.Exists(newFullOutputPath))
@@ -259,11 +262,12 @@ namespace Generator3D
                 Directory.Delete(newFullOutputPath, true);
             }
             
-            // Rename the directory
+            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
-            outputDirectory = newOutputPath;
+            outputDirectory = newFullOutputPath;
 
-            Console.WriteLine($"3D Lenia simulation completed with behavior: {endBehavior.Substring(1)}");
+            Console.WriteLine($"3D Lenia simulation completed with behavior: {behavior}");
+            Console.WriteLine($"Output saved to: {newFullOutputPath}");
         }
 
         void SaveFrameToFile(int frameIndex, Dictionary<Vector3Int, float> frameData)
@@ -292,25 +296,33 @@ namespace Generator3D
 
         public void NextGeneration()
         {
-            Dictionary<Vector3Int, float> newAliveCells = new Dictionary<Vector3Int, float>();
-            HashSet<Vector3Int> positionsToUpdate = new HashSet<Vector3Int>();
+            var convolutionValues = new ConcurrentDictionary<Vector3Int, float>();
 
-            // Gather positions to update
-            foreach (var cellPos in aliveCells.Keys)
+            // Compute convolution values by scattering contributions from alive cells
+            Parallel.ForEach(aliveCells, aliveCellKvp =>
             {
-                foreach (var offset in kernelOffsets)
+                var aliveCellPos = aliveCellKvp.Key;
+                var aliveCellValue = aliveCellKvp.Value;
+
+                for (int idx = 0; idx < kernelOffsets.Count; idx++)
                 {
-                    positionsToUpdate.Add(cellPos + offset);
+                    Vector3Int neighborPos = aliveCellPos + kernelOffsets[idx];
+                    float kernelValue = kernelValues[idx];
+                    float contribution = aliveCellValue * kernelValue;
+
+                    // Update convolution value atomically
+                    convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
                 }
-            }
+            });
 
-            // Parallel processing of positions
-            var positions = positionsToUpdate.ToArray();
-            var results = new Dictionary<Vector3Int, float>();
+            var newAliveCells = new ConcurrentDictionary<Vector3Int, float>();
 
-            Parallel.ForEach(positions, position =>
+            // Compute new cell values based on convolution values
+            Parallel.ForEach(convolutionValues, convolutionKvp =>
             {
-                float convolutionValue = CalculateConvolution(position);
+                Vector3Int position = convolutionKvp.Key;
+                float convolutionValue = convolutionKvp.Value;
+
                 float growth = GrowthFunction(convolutionValue);
 
                 float currentValue = aliveCells.TryGetValue(position, out float value) ? value : 0f;
@@ -318,35 +330,11 @@ namespace Generator3D
 
                 if (newValue > 0.01f)
                 {
-                    lock (results)
-                    {
-                        results[position] = newValue;
-                    }
+                    newAliveCells[position] = newValue;
                 }
             });
 
-            aliveCells = results;
-        }
-
-        private float CalculateConvolution(Vector3Int position)
-        {
-            float sum = 0f;
-            
-            foreach (var cell in aliveCells)
-            {
-                Vector3Int offset = new Vector3Int(
-                    cell.Key.x - position.x,
-                    cell.Key.y - position.y,
-                    cell.Key.z - position.z
-                );
-                
-                if (kernelOffsetIndices.TryGetValue(offset, out int idx))
-                {
-                    sum += cell.Value * kernelValues[idx];
-                }
-            }
-            
-            return sum;
+            aliveCells = new Dictionary<Vector3Int, float>(newAliveCells);
         }
 
         float GrowthFunction(float x)
