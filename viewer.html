@@ -94,7 +94,12 @@
             align-items: center;
             display: none;
         }
-        .w-value {
+        .slice-controls {
+            display: none;
+            gap: 4px;
+            align-items: center;
+        }
+        .w-value, .slice-value {
             text-align: center;
             min-width: 40px;
             padding: 8px;
@@ -137,10 +142,25 @@
             <div class="w-value" id="wValue">W: 0</div>
             <button id="increaseWButton">W+</button>
         </div>
+        <div class="slice-controls" id="sliceControls">
+            <label class="toggle">
+                <input type="checkbox" id="sliceToggle">
+                <span class="toggle-label">Slice View</span>
+            </label>
+            <button id="decreaseSliceButton">-</button>
+            <div class="slice-value" id="sliceValue">±0</div>
+            <button id="increaseSliceButton">+</button>
+        </div>
         <div class="toggle-container">
             <label class="toggle">
                 <input type="checkbox" id="loopToggle" checked>
                 <span class="toggle-label">Loop</span>
+            </label>
+        </div>
+        <div class="rotation-toggle" style="display: none;">
+            <label class="toggle">
+                <input type="checkbox" id="rotationToggle" checked>
+                <span class="toggle-label">Auto-Rotate</span>
             </label>
         </div>
     </div>
@@ -161,11 +181,15 @@
         let dimensions = 0;
         let globalMinX = 0, globalMaxX = 0, globalMinY = 0, globalMaxY = 0;
         let isFullscreen = false;
+        let sliceThickness = 0;
+        let maxSliceThickness = 5;
         
         const canvas = document.getElementById('leniaCanvas');
         const ctx = canvas.getContext('2d');
         const frameCounter = document.getElementById('frameCounter');
         const controlsElement = document.querySelector('.controls');
+        const sliceToggle = document.getElementById('sliceToggle');
+        const sliceControls = document.getElementById('sliceControls');
         
         // Simplified zoom state
         let currentScale = 1;
@@ -198,8 +222,7 @@
             controls.autoRotate = true;
             controls.autoRotateSpeed = 1.0;
 
-            camera.position.set(50, 50, 50);
-            camera.lookAt(0, 0, 0);
+            resetCamera();
 
             // Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -219,6 +242,15 @@
             });
 
             animate3D();
+        }
+
+        function resetCamera() {
+            camera.position.set(50, 50, 50);
+            camera.lookAt(0, 0, 0);
+            if (controls) {
+                controls.target.set(0, 0, 0);
+                controls.update();
+            }
         }
 
         function init2D() {
@@ -285,9 +317,11 @@
             
             document.getElementById('dimensionDisplay').textContent = `${dimensions}D Visualization`;
             document.getElementById('wControls').style.display = dimensions === 4 ? 'flex' : 'none';
+            document.getElementById('sliceControls').style.display = dimensions === 3 ? 'flex' : 'none';
             document.querySelector('.frame-nav').style.display = 'flex';
             document.querySelector('.toggle-container').style.display = 'flex';
             document.querySelector('.playback-controls').style.display = 'block';
+            document.querySelector('.rotation-toggle').style.display = dimensions >= 3 ? 'block' : 'none';
             frameCounter.style.display = 'block';
 
             // Load all frames
@@ -309,12 +343,26 @@
                 init3D();
             }
 
+            // Reset simulation state
             currentFrame = 0;
             currentW = 0;
+            sliceThickness = 0;
+            
+            // Start paused at frame 0
             isPlaying = false;
+            playPauseButton.textContent = 'Play';
             if (dimensions === 4) updateWBounds();
             updateFrameCounter();
             drawFrame(currentFrame);
+            
+            // If 3D/4D, just render the first frame
+            if (dimensions >= 3) {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                draw3DFrame(currentFrame);
+            }
         });
 
         function createCube(x, y, z, value) {
@@ -382,9 +430,14 @@
             cubeInstances.clear();
 
             const frame = frames[frameIndex];
-            const cells = dimensions === 4 ? 
+            let cells = dimensions === 4 ? 
                 frame.cells.filter(cell => cell.w === currentW) :
                 frame.cells;
+
+            // Apply slice filter if enabled
+            if (dimensions === 3 && sliceToggle.checked) {
+                cells = cells.filter(cell => Math.abs(cell.x) <= sliceThickness);
+            }
 
             cells.forEach(cell => {
                 const key = `${cell.x},${cell.y},${cell.z}`;
@@ -468,7 +521,7 @@
         prevFrameButton.addEventListener('click', () => {
             isPlaying = false;
             if (animationId) cancelAnimationFrame(animationId);
-            currentFrame = Math.max(0, currentFrame - 1);
+            currentFrame = (currentFrame - 1 + frames.length) % frames.length;
             drawFrame(currentFrame);
             playPauseButton.textContent = 'Play';
         });
@@ -476,7 +529,7 @@
         nextFrameButton.addEventListener('click', () => {
             isPlaying = false;
             if (animationId) cancelAnimationFrame(animationId);
-            currentFrame = Math.min(frames.length - 1, currentFrame + 1);
+            currentFrame = (currentFrame + 1) % frames.length;
             drawFrame(currentFrame);
             playPauseButton.textContent = 'Play';
         });
@@ -503,6 +556,27 @@
             if (currentW < wMax) {
                 currentW++;
                 document.getElementById('wValue').textContent = `W: ${currentW}`;
+                drawFrame(currentFrame);
+            }
+        });
+
+        // Slice controls
+        sliceToggle.addEventListener('change', () => {
+            drawFrame(currentFrame);
+        });
+
+        document.getElementById('decreaseSliceButton').addEventListener('click', () => {
+            if (sliceThickness > 0) {
+                sliceThickness--;
+                document.getElementById('sliceValue').textContent = `±${sliceThickness}`;
+                drawFrame(currentFrame);
+            }
+        });
+
+        document.getElementById('increaseSliceButton').addEventListener('click', () => {
+            if (sliceThickness < maxSliceThickness) {
+                sliceThickness++;
+                document.getElementById('sliceValue').textContent = `±${sliceThickness}`;
                 drawFrame(currentFrame);
             }
         });
@@ -565,6 +639,14 @@
                 smoothScale();
             }
         }, { passive: false });
+
+        // Add rotation toggle handler
+        const rotationToggle = document.getElementById('rotationToggle');
+        rotationToggle.addEventListener('change', () => {
+            if (controls) {
+                controls.autoRotate = rotationToggle.checked;
+            }
+        });
     </script>
 </body>
 </html>
