@@ -8,7 +8,6 @@ using System.Linq;
 public class GeneratorManager
 {
     private const string OUTPUTS_DIR = "outputs";
-    private const string COOL_SIMULATIONS_DIR = "cool_simulations";
     private const string TWO_D_DIR = "2D";
     private const string THREE_D_DIR = "3D";
     private const string FOUR_D_DIR = "4D";
@@ -37,10 +36,7 @@ public class GeneratorManager
         {
             Path.Combine(OUTPUTS_DIR, TWO_D_DIR),
             Path.Combine(OUTPUTS_DIR, THREE_D_DIR),
-            Path.Combine(OUTPUTS_DIR, FOUR_D_DIR),
-            Path.Combine(COOL_SIMULATIONS_DIR, TWO_D_DIR),
-            Path.Combine(COOL_SIMULATIONS_DIR, THREE_D_DIR),
-            Path.Combine(COOL_SIMULATIONS_DIR, FOUR_D_DIR)
+            Path.Combine(OUTPUTS_DIR, FOUR_D_DIR)
         };
 
         foreach (var dir in directories)
@@ -58,7 +54,7 @@ public class GeneratorManager
 
         /*
             //run multiple simulations with randomly generated parameters
-
+            
             int nSimulations = 1;
 
             Run2DSimulations(generator2DPath, nSimulations);
@@ -67,8 +63,8 @@ public class GeneratorManager
         */
 
         /*
-            //Or add a single simulation here:
-
+        //Or add a single simulation here:
+        
             simulations.Add(new Simulation
             {
                 GeneratorPath = generator2DPath,
@@ -367,34 +363,5 @@ public class GeneratorManager
     {
         GeneratorManager manager = new GeneratorManager();
         await manager.RunSimulations();
-    }
-
-    public static void MoveToCoolSimulations(string simulationPath)
-    {
-        // Determine the dimension from the path
-        string dimension;
-        if (simulationPath.Contains("/2D/") || simulationPath.Contains("\\2D\\"))
-            dimension = TWO_D_DIR;
-        else if (simulationPath.Contains("/3D/") || simulationPath.Contains("\\3D\\"))
-            dimension = THREE_D_DIR;
-        else if (simulationPath.Contains("/4D/") || simulationPath.Contains("\\4D\\"))
-            dimension = FOUR_D_DIR;
-        else
-            throw new ArgumentException("Cannot determine dimension from path");
-
-        // Get the simulation name
-        string simulationName = Path.GetFileName(simulationPath);
-        
-        // Construct the destination path
-        string destinationPath = Path.Combine(COOL_SIMULATIONS_DIR, dimension, simulationName);
-        
-        // If the destination already exists, delete it
-        if (Directory.Exists(destinationPath))
-            Directory.Delete(destinationPath, true);
-        
-        // Move the simulation to cool_simulations
-        Directory.Move(simulationPath, destinationPath);
-        
-        Console.WriteLine($"Moved simulation to cool_simulations: {destinationPath}");
     }
 }
