@@ -208,6 +208,8 @@ Instead of binary states (0 or 1), cells can take continuous values between 0 an
 #### [4D Simulation (View at 9:29)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=569)
 
 - **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns. [(View at 1:54)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
+  
+  [![Unstable Patterns](https://www.tylar.io/assets/images/simulationImages/unstable.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
 
 - **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly. [(View at 0:20)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=20)
   
