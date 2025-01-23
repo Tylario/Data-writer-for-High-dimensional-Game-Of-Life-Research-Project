@@ -26,22 +26,22 @@ You can customize the simulations by modifying the `GeneratorManager.cs` file in
 simulations.Add(new Simulation
 {
     GeneratorPath = generator2DPath,
-    Arguments = "--numFrames 75 " +
-               "--kernelRadius 9 " +
-               "--kernelSigmaMultiplier 0.175 " +
-               "--growthSigmaMultiplier 0.004 " +
-               "--center 0.16 " +
-               "--deltaT 0.1 " +
-               "--startingAreaSize 12 " +
-               "--cellSpawnChance 0.3 " +
-               "--minInitialValue 0.2 " +
-               "--maxInitialValue 1.0 " +
-               "--growthSteepness 4.0 " +
-               "--startingPoints 1 " +
-               "--randomOffsetRange 90 " +
-               "--maxCellMass 324.0 " +
-               "--outputDirectory 2D_Example " +
-               "--maxFrameTimeSeconds 2.0"
+    Arguments = "--numFrames 75 " +                // Total number of simulation frames to generate
+               "--kernelRadius 9 " +               // Size of neighborhood that affects each cell
+               "--kernelSigmaMultiplier 0.175 " +  // Controls spread of kernel function relative to radius
+               "--growthSigmaMultiplier 0.004 " +  // Controls spread of growth function relative to radius
+               "--center 0.16 " +                  // Target density for stable growth (optimal neighborhood sum)
+               "--deltaT 0.1 " +                   // Time step size for simulation updates
+               "--startingAreaSize 12 " +          // Size of initial area where cells can spawn
+               "--cellSpawnChance 0.3 " +          // Probability of spawning a cell in the initial state
+               "--minInitialValue 0.2 " +          // Minimum possible initial cell value
+               "--maxInitialValue 1.0 " +          // Maximum possible initial cell value
+               "--growthSteepness 4.0 " +          // Controls sharpness of growth function response
+               "--startingPoints 1 " +             // Number of initial clusters of cells
+               "--randomOffsetRange 90 " +         // Maximum distance between initial cell clusters
+               "--maxCellMass 324.0 " +           // Maximum total cell mass before simulation ends
+               "--outputDirectory 2D_Example " +    // Directory where simulation data will be saved
+               "--maxFrameTimeSeconds 2.0"         // Maximum time allowed per frame calculation
 });
 
 // 3D Example
