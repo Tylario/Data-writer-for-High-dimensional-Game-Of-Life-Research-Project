@@ -134,17 +134,41 @@ When using the Run[2/3/4]DSimulations methods, parameters are randomly generated
   - W dimension controls (+/-) with auto-scan option
   - Cross section controls for both 3D and W dimensions
 
----
+## Results
 
-## Introduction
+### Patterns Observed
 
-The **Game of Life**, developed by John Horton Conway, is a two-dimensional cellular automaton that demonstrates how complex patterns and behaviors can emerge from simple rules applied to a grid of cells. My project expands upon this foundational principle by:
+#### [2D Simulation (View at 0:00)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=0)
+#### [3D Simulation (View at 5:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=305)
+#### [4D Simulation (View at 9:29)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=569)
 
-1. Exploring higher-dimensional spaces (3D and 4D).
-2. Incorporating continuous states and smooth transitions, inspired by SmoothLife and Lenia.
-3. Utilizing convolution operations with circular and spherical kernels.
+- **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns. [(View at 1:54)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
+  
+  [![Unstable Patterns](https://www.tylar.io/assets/images/simulationImages/unstable.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
 
----
+- **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly. [(View at 0:20)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=20)
+  
+  [![Explosive Growth](https://www.tylar.io/assets/images/simulationImages/explosiveGrowth.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=20)
+
+- **Decay:** Patterns that gradually die out, either due to insufficient support from neighbors or overcrowding. [(View at 0:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=5)
+  
+  [![Decay](https://www.tylar.io/assets/images/simulationImages/decay.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=5)
+
+- **Static Equilibrium:** Patterns that stabilize into fixed shapes, usually as circles/sphere, which do not change over time. [(View at 3:59)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=239)
+  
+  [![Static Equilibrium](https://www.tylar.io/assets/images/simulationImages/staticEquilibrium.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=239)
+
+- **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry. [(View at 4:26)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=266)
+  
+  [![Oscillating Patterns](https://www.tylar.io/assets/images/simulationImages/oscillatingPattern.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=266)
+
+- **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life. [(View at 4:07)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=247)
+  
+  [![Gliders](https://www.tylar.io/assets/images/simulationImages/gliders.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=247)
+
+- **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals. [(View at 2:47)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=167)
+  
+  [![Rotating Structures](https://www.tylar.io/assets/images/simulationImages/rotatingStructure.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=167)
 
 ## Mathematical Framework
 
@@ -196,42 +220,4 @@ Instead of binary states (0 or 1), cells can take continuous values between 0 an
    - `growthSteepness`: Controls sharpness of growth response
    - `center`: Target density for stable growth
    - `deltaT`: Time step size for state updates
-
----
-
-## Results
-
-### Patterns Observed
-
-#### [2D Simulation (View at 0:00)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=0)
-#### [3D Simulation (View at 5:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=305)
-#### [4D Simulation (View at 9:29)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=569)
-
-- **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns. [(View at 1:54)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
-  
-  [![Unstable Patterns](https://www.tylar.io/assets/images/simulationImages/unstable.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=114)
-
-- **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly. [(View at 0:20)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=20)
-  
-  [![Explosive Growth](https://www.tylar.io/assets/images/simulationImages/explosiveGrowth.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=20)
-
-- **Decay:** Patterns that gradually die out, either due to insufficient support from neighbors or overcrowding. [(View at 0:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=5)
-  
-  [![Decay](https://www.tylar.io/assets/images/simulationImages/decay.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=5)
-
-- **Static Equilibrium:** Patterns that stabilize into fixed shapes, usually as circles/sphere, which do not change over time. [(View at 3:59)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=239)
-  
-  [![Static Equilibrium](https://www.tylar.io/assets/images/simulationImages/staticEquilibrium.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=239)
-
-- **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry. [(View at 4:26)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=266)
-  
-  [![Oscillating Patterns](https://www.tylar.io/assets/images/simulationImages/oscillatingPattern.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=266)
-
-- **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life. [(View at 4:07)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=247)
-  
-  [![Gliders](https://www.tylar.io/assets/images/simulationImages/gliders.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=247)
-
-- **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals. [(View at 2:47)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=167)
-  
-  [![Rotating Structures](https://www.tylar.io/assets/images/simulationImages/rotatingStructure.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4#t=167)
 
