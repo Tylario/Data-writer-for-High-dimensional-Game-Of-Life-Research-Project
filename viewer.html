@@ -176,7 +176,7 @@
     <div class="controls">
         <div id="dimensionContainer">
             <div id="dimensionDisplay">No file loaded</div>
-            <button id="uploadButton">Upload</button>
+            <button id="uploadButton">Upload Folder</button>
         </div>
         <div class="file-input-container" style="display: none;">
             <input type="file" id="fileInput" multiple accept=".json" webkitdirectory>
@@ -184,6 +184,7 @@
         <div class="playback-info" style="display: none; margin: 10px 0; background: #2a2a2a; padding: 10px; border-radius: 5px;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
                 <span id="frameCounter">Frame: 0/0</span>
+                <span id="massCounter">Mass: 0.00</span>
                 <div class="fps-control">
                     <label for="fpsInput">Max FPS: </label>
                     <input type="number" id="fpsInput" min="1" max="60" value="8" style="width: 50px; background: #333; color: white; border: 1px solid #444; border-radius: 3px; padding: 2px 5px;">
@@ -206,16 +207,22 @@
             <button id="decreaseWButton">W-</button>
             <div class="w-value" id="wValue">W: 0</div>
             <button id="increaseWButton">W+</button>
-            <button id="autoScanButton">Auto Scan</button>
+            <label class="toggle">
+                <input type="checkbox" id="wAutoScanToggle">
+                <span class="toggle-label">Auto Scan</span>
+            </label>
         </div>
         <div class="slice-controls" id="sliceControls">
             <label class="toggle">
                 <input type="checkbox" id="sliceToggle">
-                <span class="toggle-label">Slice View</span>
+                <span class="toggle-label">View cross section</span>
             </label>
             <button id="decreaseSliceButton">-</button>
-            <div class="slice-value" id="sliceValue">±0</div>
             <button id="increaseSliceButton">+</button>
+            <label class="toggle">
+                <input type="checkbox" id="sliceAutoScanToggle">
+                <span class="toggle-label">Auto Scan</span>
+            </label>
         </div>
         <div class="toggle-container">
             <label class="toggle">
@@ -281,19 +288,21 @@
             renderer.setClearColor(0x000000);
             renderer.physicallyCorrectLights = true;
             
-            // Clear existing canvas
+            // Clear existing canvas and ensure proper display
+            const canvasContainer = document.getElementById('canvas-container');
             canvas.style.display = 'none';
-            const existingRenderer = document.querySelector('canvas');
+            const existingRenderer = document.querySelector('canvas:not(#leniaCanvas)');
             if (existingRenderer) {
                 existingRenderer.remove();
             }
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            canvasContainer.appendChild(renderer.domElement);
+            renderer.domElement.style.display = 'block';
 
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.autoRotate = true;
-            controls.autoRotateSpeed = 1.0;
+            controls.autoRotateSpeed = 0.25;
 
             resetCamera();
 
@@ -348,6 +357,18 @@
             const baseSize = Math.min(window.innerWidth * 0.99, window.innerHeight * 0.95);
             canvas.width = baseSize;
             canvas.height = baseSize;
+
+            // Ensure Three.js resources are properly cleaned up
+            if (renderer) {
+                renderer.dispose();
+                renderer = null;
+            }
+            if (controls) {
+                controls.dispose();
+                controls = null;
+            }
+            scene = null;
+            camera = null;
         }
 
         function detectDimensions(frameData) {
@@ -386,7 +407,7 @@
             const parts = folderPath.split('_');
             
             parts.forEach(part => {
-                if (part.includes('R') && !part.includes('RM')) {
+                if (part.startsWith('R') && !part.includes('RM') && !part.includes('ROR')) {
                     params.radius = part.substring(1);
                 } else if (part.includes('RM')) {
                     params.radiusMultiplier = part.substring(2);
@@ -402,47 +423,34 @@
                     params.growthSteepness = part.substring(2);
                 } else if (part.includes('C') && part.length < 5) {
                     params.center = part.substring(1);
+                } else if (part.includes('SP')) {  // Starting Points
+                    params.startingPoints = part.substring(2);
+                } else if (part.includes('ROR')) {  // Random Offset Range
+                    params.randomOffsetRange = part.substring(3);
                 }
             });
 
-            // Create W value display if in 4D mode
-            const wDisplay = dimensions === 4 ? 
-                `<div style="text-align: center; margin: 5px 0; font-size: 16px; color: #fff;">
-                    W-Axis: ${currentW}
-                </div>` : '';
-
-            // Update the parameter display with new grouping and conditional rendering
+            // Update the parameter display formatting to hide N/A values
             const paramDisplay = document.getElementById('parametersDisplay');
+            const displayParam = (label, value) => value ? `<span style="color: #888;">${label}:</span> ${value}<br>` : '';
             
-            // Only show parameters that aren't N/A
-            const algorithmParams = [
-                params.radius ? `<span style="color: #888;">Kernel Radius:</span> ${params.radius}` : '',
-                params.growthSteepness ? `<span style="color: #888;">Growth Steepness:</span> ${params.growthSteepness}` : '',
-                params.kernelSigmaMultiplier ? `<span style="color: #888;">Kernel σ:</span> ${params.kernelSigmaMultiplier}` : '',
-                params.growthSigmaMultiplier ? `<span style="color: #888;">Growth σ:</span> ${params.growthSigmaMultiplier}` : ''
-            ].filter(Boolean);
-
-            const initializationParams = [
-                params.startingAreaSize ? `<span style="color: #888;">Area Size:</span> ${params.startingAreaSize}` : '',
-                params.cellSpawnChance ? `<span style="color: #888;">Spawn Chance:</span> ${params.cellSpawnChance}` : ''
-            ].filter(Boolean);
-
             paramDisplay.innerHTML = `
-                ${wDisplay}
-                <div style="margin-top: 8px;">
-                    <div style="color: #aaa; font-size: 13px; margin-bottom: 5px;">Algorithm Parameters</div>
-                    <div style="margin-left: 8px;">
-                        ${algorithmParams.join('<br>')}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        ${displayParam('Radius', params.radius)}
+                        ${displayParam('Multiplier', params.radiusMultiplier)}
+                        ${displayParam('Area Size', params.startingAreaSize)}
+                        ${displayParam('Kernel σ', params.kernelSigmaMultiplier)}
+                        ${displayParam('Starting Points', params.startingPoints)}
+                    </div>
+                    <div>
+                        ${displayParam('Growth σ', params.growthSigmaMultiplier)}
+                        ${displayParam('Spawn Chance', params.cellSpawnChance)}
+                        ${displayParam('Growth Steepness', params.growthSteepness)}
+                        ${displayParam('Center', params.center)}
+                        ${displayParam('Offset Range', params.randomOffsetRange)}
                     </div>
                 </div>
-                ${initializationParams.length > 0 ? `
-                    <div style="margin-top: 12px;">
-                        <div style="color: #aaa; font-size: 13px; margin-bottom: 5px;">Initialization Parameters</div>
-                        <div style="margin-left: 8px;">
-                            ${initializationParams.join('<br>')}
-                        </div>
-                    </div>
-                ` : ''}
             `;
         }
 
@@ -468,6 +476,13 @@
                 }
             }
             
+            // Reset canvas display
+            canvas.style.display = 'block';
+            const existingRenderer = document.querySelector('canvas:not(#leniaCanvas)');
+            if (existingRenderer) {
+                existingRenderer.remove();
+            }
+            
             frames = [];
             const files = Array.from(e.target.files).sort((a, b) => {
                 const numA = parseInt(a.name.match(/\d+/)[0]);
@@ -489,7 +504,12 @@
             const firstFrameData = JSON.parse(firstFrameText);
             dimensions = detectDimensions(firstFrameData);
             
-            document.getElementById('dimensionDisplay').textContent = `${dimensions}D Visualization`;
+            // Update dimension display immediately
+            if (dimensions === 4) {
+                document.getElementById('dimensionDisplay').textContent = `4D Simulation (w = ${currentW})`;
+            } else {
+                document.getElementById('dimensionDisplay').textContent = `${dimensions}D Simulation`;
+            }
             document.getElementById('wControls').style.display = dimensions === 4 ? 'flex' : 'none';
             document.getElementById('sliceControls').style.display = dimensions >= 3 ? 'flex' : 'none';
             document.querySelector('.frame-nav').style.display = 'flex';
@@ -546,6 +566,17 @@
             isAutoScanning = false;
             autoScanDirection = 1;
             document.getElementById('autoScanButton').textContent = 'Auto Scan';
+
+            if (wAutoScanInterval) {
+                clearInterval(wAutoScanInterval);
+                wAutoScanInterval = null;
+                document.getElementById('wAutoScanToggle').checked = false;
+            }
+            if (sliceAutoScanInterval) {
+                clearInterval(sliceAutoScanInterval);
+                sliceAutoScanInterval = null;
+                document.getElementById('sliceAutoScanToggle').checked = false;
+            }
         });
 
         function createCube(x, y, z, value) {
@@ -609,35 +640,93 @@
         }
 
         function draw3DFrame(frameIndex) {
-            cubeInstances.forEach(cube => scene.remove(cube));
-            cubeInstances.clear();
-
             const frame = frames[frameIndex];
             let cells = frame.cells;
 
-            // Handle slicing for both 3D and 4D
             if (sliceToggle.checked) {
-                if (dimensions === 4) {
-                    cells = cells.filter(cell => 
-                        cell.w === currentW && 
-                        Math.abs(cell.x) <= sliceThickness
+                // If in slice view, use 2D rendering
+                if (renderer) renderer.domElement.style.display = 'none';
+                canvas.style.display = 'block';
+                
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Calculate global bounds for all frames in slice view
+                let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
+                
+                frames.forEach(frame => {
+                    const sliceCells = frame.cells.filter(cell => 
+                        dimensions === 4 
+                            ? (cell.w === currentW && Math.abs(cell.x) <= sliceThickness)
+                            : Math.abs(cell.x) <= sliceThickness
                     );
-                } else { // 3D
-                    cells = cells.filter(cell => 
-                        Math.abs(cell.x) <= sliceThickness
-                    );
-                }
-            } else if (dimensions === 4) {
-                // If slice view is off in 4D, still filter by current W
-                cells = cells.filter(cell => cell.w === currentW);
-            }
+                    
+                    sliceCells.forEach(cell => {
+                        minY = Math.min(minY, cell.y);
+                        maxY = Math.max(maxY, cell.y);
+                        minZ = Math.min(minZ, cell.z);
+                        maxZ = Math.max(maxZ, cell.z);
+                    });
+                });
 
-            cells.forEach(cell => {
-                const key = `${cell.x},${cell.y},${cell.z}`;
-                const cube = createCube(cell.x, cell.y, cell.z, cell.value);
-                scene.add(cube);
-                cubeInstances.set(key, cube);
-            });
+                // Add padding
+                minY--; maxY++; minZ--; maxZ++;
+
+                // Calculate scale to fit in canvas
+                const width = maxY - minY;
+                const height = maxZ - minZ;
+                const scale = Math.min(
+                    (canvas.width * 0.9) / width,
+                    (canvas.height * 0.9) / height
+                );
+
+                // Center the view
+                const offsetY = (canvas.width - width * scale) / 2;
+                const offsetZ = (canvas.height - height * scale) / 2;
+
+                // Draw current frame's cells
+                const sliceCells = cells.filter(cell => 
+                    dimensions === 4 
+                        ? (cell.w === currentW && Math.abs(cell.x) <= sliceThickness)
+                        : Math.abs(cell.x) <= sliceThickness
+                );
+
+                sliceCells.forEach(cell => {
+                    const y = (cell.y - minY) * scale + offsetY;
+                    const z = (cell.z - minZ) * scale + offsetZ;
+                    const cellSize = Math.max(1, scale);
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${cell.value})`;
+                    ctx.fillRect(y, z, cellSize, cellSize);
+                });
+            } else {
+                // Regular 3D view
+                canvas.style.display = 'none';
+                if (renderer) {
+                    renderer.domElement.style.display = 'block';
+                    
+                    cubeInstances.forEach(cube => scene.remove(cube));
+                    cubeInstances.clear();
+
+                    if (dimensions === 4) {
+                        cells = cells.filter(cell => cell.w === currentW);
+                    }
+
+                    cells.forEach(cell => {
+                        const key = `${cell.x},${cell.y},${cell.z}`;
+                        const cube = createCube(cell.x, cell.y, cell.z, cell.value);
+                        scene.add(cube);
+                        cubeInstances.set(key, cube);
+                    });
+                }
+            }
+        }
+
+        function updateMassCounter(frame) {
+            if (!frame || !frame.cells) return;
+            const totalMass = frame.cells.reduce((sum, cell) => sum + cell.value, 0);
+            document.getElementById('massCounter').textContent = `Mass: ${totalMass.toFixed(2)}`;
         }
 
         function drawFrame(frameIndex) {
@@ -649,6 +738,7 @@
                 draw3DFrame(frameIndex);
             }
             updateFrameCounter();
+            updateMassCounter(frames[frameIndex]);
         }
 
         function updateFrameCounter() {
@@ -741,6 +831,7 @@
             if (currentW > wMin) {
                 currentW--;
                 document.getElementById('wValue').textContent = `W: ${currentW}`;
+                updateDimensionDisplay();
                 drawFrame(currentFrame);
             }
         });
@@ -749,19 +840,20 @@
             if (currentW < wMax) {
                 currentW++;
                 document.getElementById('wValue').textContent = `W: ${currentW}`;
+                updateDimensionDisplay();
                 drawFrame(currentFrame);
             }
         });
 
         // Slice controls
         sliceToggle.addEventListener('change', () => {
+            updateDimensionDisplay();
             drawFrame(currentFrame);
         });
 
         document.getElementById('decreaseSliceButton').addEventListener('click', () => {
             if (sliceThickness > 0) {
                 sliceThickness--;
-                document.getElementById('sliceValue').textContent = `±${sliceThickness}`;
                 drawFrame(currentFrame);
             }
         });
@@ -769,7 +861,6 @@
         document.getElementById('increaseSliceButton').addEventListener('click', () => {
             if (sliceThickness < maxSliceThickness) {
                 sliceThickness++;
-                document.getElementById('sliceValue').textContent = `±${sliceThickness}`;
                 drawFrame(currentFrame);
             }
         });
@@ -841,39 +932,83 @@
             }
         });
 
-        // Add new function for auto scanning
-        function toggleAutoScan() {
-            isAutoScanning = !isAutoScanning;
-            const autoScanButton = document.getElementById('autoScanButton');
+        // Update the dimension display text handling
+        function updateDimensionDisplay() {
+            let dimensionText;
+            if (dimensions === 4) {
+                dimensionText = `4D Simulation (w = ${currentW}${sliceToggle.checked ? `, x = ${sliceThickness}` : ''})`;
+            } else if (dimensions === 3) {
+                dimensionText = sliceToggle.checked 
+                    ? `3D Simulation (x = ${sliceThickness})`
+                    : '3D Simulation';
+            } else {
+                dimensionText = '2D Simulation';
+            }
+            document.getElementById('dimensionDisplay').textContent = dimensionText;
+        }
+
+        // Update auto-scan functionality for w-axis
+        let isWAutoScanning = false;
+        let wAutoScanInterval = null;
+        let wAutoScanDirection = 1;
+
+        document.getElementById('wAutoScanToggle').addEventListener('change', (e) => {
+            isWAutoScanning = e.target.checked;
             
-            if (isAutoScanning) {
-                autoScanButton.textContent = 'Stop Scan';
-                autoScanInterval = setInterval(() => {
-                    currentW += autoScanDirection;
+            if (isWAutoScanning) {
+                wAutoScanInterval = setInterval(() => {
+                    currentW += wAutoScanDirection;
                     
-                    // Reverse direction at bounds
                     if (currentW >= wMax) {
                         currentW = wMax;
-                        autoScanDirection = -1;
+                        wAutoScanDirection = -1;
                     } else if (currentW <= wMin) {
                         currentW = wMin;
-                        autoScanDirection = 1;
+                        wAutoScanDirection = 1;
                     }
                     
                     document.getElementById('wValue').textContent = `W: ${currentW}`;
+                    updateDimensionDisplay();
                     drawFrame(currentFrame);
-                }, 1000); // Changed from 100 to 1000 milliseconds (1 second)
+                }, 1000);
             } else {
-                autoScanButton.textContent = 'Auto Scan';
-                if (autoScanInterval) {
-                    clearInterval(autoScanInterval);
-                    autoScanInterval = null;
+                if (wAutoScanInterval) {
+                    clearInterval(wAutoScanInterval);
+                    wAutoScanInterval = null;
                 }
             }
-        }
+        });
 
-        // Add event listener for the auto scan button
-        document.getElementById('autoScanButton').addEventListener('click', toggleAutoScan);
+        // Update auto-scan functionality for slice
+        let isSliceAutoScanning = false;
+        let sliceAutoScanInterval = null;
+        let sliceAutoScanDirection = 1;
+
+        document.getElementById('sliceAutoScanToggle').addEventListener('change', (e) => {
+            isSliceAutoScanning = e.target.checked;
+            
+            if (isSliceAutoScanning) {
+                sliceAutoScanInterval = setInterval(() => {
+                    sliceThickness += sliceAutoScanDirection;
+                    
+                    if (sliceThickness >= maxSliceThickness) {
+                        sliceThickness = maxSliceThickness;
+                        sliceAutoScanDirection = -1;
+                    } else if (sliceThickness <= 0) {
+                        sliceThickness = 0;
+                        sliceAutoScanDirection = 1;
+                    }
+                    
+                    updateDimensionDisplay();
+                    drawFrame(currentFrame);
+                }, 1000);
+            } else {
+                if (sliceAutoScanInterval) {
+                    clearInterval(sliceAutoScanInterval);
+                    sliceAutoScanInterval = null;
+                }
+            }
+        });
 
         // Add event listener for FPS input
         document.getElementById('fpsInput').addEventListener('change', (e) => {

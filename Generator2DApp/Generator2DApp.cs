@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Generator2D
 {
@@ -76,7 +77,10 @@ namespace Generator2D
                             case "outputDirectory": generator.outputDirectory = value; break;
                             case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
                             case "growthSteepness": generator.growthSteepness = float.Parse(value); break;
-                                default: Console.WriteLine($"Unknown parameter: {param}"); break;
+                            case "startingPoints": generator.startingPoints = int.Parse(value); break;
+                            case "randomOffsetRange": generator.randomOffsetRange = int.Parse(value); break;
+                            case "maxCellMass": generator.maxCellMass = float.Parse(value); break;
+                            default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
                 }
@@ -101,6 +105,9 @@ namespace Generator2D
         public string outputDirectory = "LeniaData2D";
         public float maxFrameTimeSeconds = 1500.0f;
         public float growthSteepness = 1.0f;
+        public int startingPoints = 1;
+        public int randomOffsetRange = 0;
+        public float maxCellMass = float.MaxValue;
 
         private Dictionary<Vector2Int, float> aliveCells = new Dictionary<Vector2Int, float>();
         private List<Vector2Int> kernelOffsets = new List<Vector2Int>();
@@ -163,16 +170,25 @@ namespace Generator2D
         void InitializeGame()
         {
             int halfSize = startingAreaSize / 2;
+            int halfOffsetRange = randomOffsetRange / 2;
 
-            for (int x = -halfSize; x < halfSize; x++)
+            // Create multiple starting points
+            for (int point = 0; point < startingPoints; point++)
             {
-                for (int y = -halfSize; y < halfSize; y++)
+                // Generate random offset for this starting point
+                int offsetX = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+                int offsetY = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+
+                for (int x = -halfSize; x < halfSize; x++)
                 {
-                    if (random.NextDouble() < cellSpawnChance)
+                    for (int y = -halfSize; y < halfSize; y++)
                     {
-                        Vector2Int position = new Vector2Int(x, y);
-                        float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
-                        aliveCells[position] = initialValue;
+                        if (random.NextDouble() < cellSpawnChance)
+                        {
+                            Vector2Int position = new Vector2Int(x + offsetX, y + offsetY);
+                            float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
+                            aliveCells[position] = initialValue;
+                        }
                     }
                 }
             }
@@ -189,15 +205,28 @@ namespace Generator2D
             
             var sw = new Stopwatch();
 
-            int targetFrameThreshold = (int)(numFrames * 0.6);
+            int targetFrameThreshold = 100;
             bool reachedThreshold = false;
+            
+            int actualFrameCount = 0;
             
             for (int i = 0; i < numFrames; i++)
             {
                 sw.Restart();
                 
+                // Calculate total mass
+                float totalMass = aliveCells.Values.Sum();
+                if (totalMass > maxCellMass)
+                {
+                    behavior = "timed_out";
+                    Console.WriteLine($"Total mass {totalMass:F2} exceeded limit of {maxCellMass:F2}.");
+                    break;
+                }
+                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
+                
+                actualFrameCount = i + 1;  // Track actual number of frames
                 
                 sw.Stop();
                 
@@ -237,17 +266,21 @@ namespace Generator2D
             string behaviorPath = Path.Combine(parentDir, behavior);
             Directory.CreateDirectory(behaviorPath);
 
-            // Generate unique subfolder name
+            // Modify the simulation name to include actual frame count
             string simName = Path.GetFileName(baseOutputPath);
+            simName = $"FRMS{actualFrameCount}_{simName}";
             string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
-            // If the new path already exists, delete it
-            if (Directory.Exists(newFullOutputPath))
+            // Handle duplicate names
+            int version = 1;
+            string baseSimName = simName;
+            while (Directory.Exists(newFullOutputPath))
             {
-                Directory.Delete(newFullOutputPath, true);
+                version++;
+                simName = $"{baseSimName}_v{version}";
+                newFullOutputPath = Path.Combine(behaviorPath, simName);
             }
             
-            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
             outputDirectory = newFullOutputPath;
 

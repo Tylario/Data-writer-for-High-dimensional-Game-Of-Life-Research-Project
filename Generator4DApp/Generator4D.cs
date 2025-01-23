@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Generator4D
 {
@@ -79,6 +80,9 @@ namespace Generator4D
                             case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
                             case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
+                            case "maxCellMass": generator.maxCellMass = float.Parse(value); break;
+                            case "startingPoints": generator.startingPoints = int.Parse(value); break;
+                            case "randomOffsetRange": generator.randomOffsetRange = int.Parse(value); break;
                             default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
@@ -103,6 +107,9 @@ namespace Generator4D
         public float maxInitialValue = 1.0f;
         public string outputDirectory = "LeniaData4D";
         public float maxFrameTimeSeconds = 1500.0f;
+        public int startingPoints = 1;
+        public int randomOffsetRange = 0;
+        public float maxCellMass = float.MaxValue;
 
         private float kernelSigma;
         private float growthSigma;
@@ -171,24 +178,36 @@ namespace Generator4D
         void InitializeGame()
         {
             int halfSize = startingAreaSize / 2;
+            int halfOffsetRange = randomOffsetRange / 2;
 
-            Parallel.For(-halfSize, halfSize, x =>
+            // Create multiple starting points
+            for (int point = 0; point < startingPoints; point++)
             {
-                for (int y = -halfSize; y < halfSize; y++)
-                for (int z = -halfSize; z < halfSize; z++)
-                for (int w = -halfSize; w < halfSize; w++)
+                // Generate random offset for this starting point
+                int offsetX = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+                int offsetY = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+                int offsetZ = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+                int offsetW = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+
+                for (int x = -halfSize; x < halfSize; x++)
                 {
-                    if (random.NextDouble() < cellSpawnChance)
+                    for (int y = -halfSize; y < halfSize; y++)
                     {
-                        Vector4Int position = new Vector4Int(x, y, z, w);
-                        float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
-                        lock (aliveCells)
+                        for (int z = -halfSize; z < halfSize; z++)
                         {
-                            aliveCells[position] = initialValue;
+                            for (int w = -halfSize; w < halfSize; w++)
+                            {
+                                if (random.NextDouble() < cellSpawnChance)
+                                {
+                                    Vector4Int position = new Vector4Int(x + offsetX, y + offsetY, z + offsetZ, w + offsetW);
+                                    float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
+                                    aliveCells[position] = initialValue;
+                                }
+                            }
                         }
                     }
                 }
-            });
+            }
         }
 
         void PrecomputeFrames()
@@ -200,6 +219,7 @@ namespace Generator4D
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
+            int actualFrameCount = 0;
 
             int targetFrameThreshold = (int)(numFrames * 0.6);
             bool reachedThreshold = false;
@@ -208,58 +228,64 @@ namespace Generator4D
             {
                 sw.Restart();
                 
+                float totalMass = aliveCells.Values.Sum();
+                if (totalMass > maxCellMass)
+                {
+                    behavior = "timed_out";
+                    break;
+                }
+                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
                 
+                actualFrameCount = i + 1;  // Track actual number of frames
+                
                 sw.Stop();
                 
-                // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
                     behavior = "timed_out";
-                    Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
 
-                // Check if we've reached the threshold for "lived" status
                 if (i >= targetFrameThreshold && aliveCells.Count > 0)
                 {
                     reachedThreshold = true;
                 }
 
-                // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
                     behavior = reachedThreshold ? "lived" : "died";
-                    Console.WriteLine($"No cells remaining after {i} frames.");
                     break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without timing out or dying, it's unstable
             if (string.IsNullOrEmpty(behavior))
             {
                 behavior = "unstable";
             }
 
-            // Create the parent directory of the output directory if it doesn't exist
             string parentDir = Path.GetDirectoryName(Path.GetFullPath(baseOutputPath));
             string behaviorPath = Path.Combine(parentDir, behavior);
             Directory.CreateDirectory(behaviorPath);
 
-            // Generate unique subfolder name
+            // Modify the simulation name to include actual frame count
             string simName = Path.GetFileName(baseOutputPath);
+            simName = $"FRMS{actualFrameCount}_{simName}";
             string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
-            // If the new path already exists, delete it
-            if (Directory.Exists(newFullOutputPath))
+            // Handle duplicate names
+            int version = 1;
+            string baseSimName = simName;
+            while (Directory.Exists(newFullOutputPath))
             {
-                Directory.Delete(newFullOutputPath, true);
+                version++;
+                simName = $"{baseSimName}_v{version}";
+                newFullOutputPath = Path.Combine(behaviorPath, simName);
             }
             
-            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
             outputDirectory = newFullOutputPath;
 

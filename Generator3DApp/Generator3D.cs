@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Linq;
 
 namespace Generator3D
 {
@@ -78,6 +79,8 @@ namespace Generator3D
                             case "maxInitialValue": generator.maxInitialValue = float.Parse(value); break;
                             case "outputDirectory": generator.outputDirectory = value; break;
                             case "maxFrameTimeSeconds": generator.maxFrameTimeSeconds = float.Parse(value); break;
+                            case "startingPoints": generator.startingPoints = int.Parse(value); break;
+                            case "randomOffsetRange": generator.randomOffsetRange = int.Parse(value); break;
                             default: Console.WriteLine($"Unknown parameter: {param}"); break;
                         }
                     }
@@ -102,6 +105,9 @@ namespace Generator3D
         public float maxInitialValue = 1.0f;
         public string outputDirectory = "LeniaData3D";
         public float maxFrameTimeSeconds = 1500.0f;
+        public int startingPoints = 1;
+        public int randomOffsetRange = 0;
+        public float maxCellMass = float.MaxValue;
 
         private float kernelSigma;
         private float growthSigma;
@@ -150,7 +156,6 @@ namespace Generator3D
         {
             List<float> kernelValueList = new List<float>();
             kernelOffsetIndices = new Dictionary<Vector3Int, int>();
-            float r0 = kernelRadius / 2.0f;  // Changed from r0Squared
             float sum = 0.0f;
             int index = 0;
 
@@ -160,9 +165,8 @@ namespace Generator3D
                 {
                     for (int k = -kernelRadius; k <= kernelRadius; k++)
                     {
-                        // Calculate actual radius instead of using squared values
-                        float r = (float)Math.Sqrt(i * i + j * j + k * k);
-                        float exponent = -((r - r0) * (r - r0)) / (2 * kernelSigma * kernelSigma);
+                        float rSquared = i * i + j * j + k * k;
+                        float exponent = -(rSquared - kernelR0Squared) / (2 * kernelSigmaSquared);
                         float value = (float)Math.Exp(exponent);
 
                         Vector3Int offset = new Vector3Int(i, j, k);
@@ -186,18 +190,28 @@ namespace Generator3D
         void InitializeGame()
         {
             int halfSize = startingAreaSize / 2;
+            int halfOffsetRange = randomOffsetRange / 2;
 
-            for (int x = -halfSize; x < halfSize; x++)
+            // Create multiple starting points
+            for (int point = 0; point < startingPoints; point++)
             {
-                for (int y = -halfSize; y < halfSize; y++)
+                // Generate random offset for this starting point, but keep x=0
+                int offsetX = 0; // Force x offset to be 0
+                int offsetY = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+                int offsetZ = random.Next(-halfOffsetRange, halfOffsetRange + 1);
+
+                for (int x = -halfSize; x < halfSize; x++)
                 {
-                    for (int z = -halfSize; z < halfSize; z++)
+                    for (int y = -halfSize; y < halfSize; y++)
                     {
-                        if (random.NextDouble() < cellSpawnChance)
+                        for (int z = -halfSize; z < halfSize; z++)
                         {
-                            Vector3Int position = new Vector3Int(x, y, z);
-                            float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
-                            aliveCells[position] = initialValue;
+                            if (random.NextDouble() < cellSpawnChance)
+                            {
+                                Vector3Int position = new Vector3Int(x + offsetX, y + offsetY, z + offsetZ);
+                                float initialValue = (float)(random.NextDouble() * (maxInitialValue - minInitialValue) + minInitialValue);
+                                aliveCells[position] = initialValue;
+                            }
                         }
                     }
                 }
@@ -209,71 +223,69 @@ namespace Generator3D
             string baseOutputPath = outputDirectory;
             string behavior = "";
             
-            // Create base directory first
             string fullOutputPath = Path.GetFullPath(outputDirectory);
             Directory.CreateDirectory(fullOutputPath);
             
             var sw = new Stopwatch();
+            int actualFrameCount = 0;
 
-            int targetFrameThreshold = (int)(numFrames * 0.6);
-            bool reachedThreshold = false;
-            
             for (int i = 0; i < numFrames; i++)
             {
                 sw.Restart();
                 
+                float totalMass = aliveCells.Values.Sum();
+                if (totalMass > maxCellMass)
+                {
+                    behavior = "timed_out";
+                    break;
+                }
+                
                 SaveFrameToFile(i, aliveCells);
                 NextGeneration();
                 
+                actualFrameCount = i + 1;  // Track actual number of frames
+                
                 sw.Stop();
                 
-                // Check if frame took too long
                 if (sw.Elapsed.TotalSeconds > maxFrameTimeSeconds)
                 {
                     behavior = "timed_out";
-                    Console.WriteLine($"Frame {i} took {sw.Elapsed.TotalSeconds:F2} seconds, exceeding limit of {maxFrameTimeSeconds} seconds.");
                     break;
                 }
 
-                // Check if we've reached the threshold for "lived" status
-                if (i >= targetFrameThreshold && aliveCells.Count > 0)
-                {
-                    reachedThreshold = true;
-                }
-
-                // Check if simulation died
                 if (aliveCells.Count == 0)
                 {
-                    behavior = reachedThreshold ? "lived" : "died";
-                    Console.WriteLine($"No cells remaining after {i} frames.");
+                    behavior = i < 25 ? "died" : "lived";
                     break;
                 }
 
                 Console.WriteLine($"Frame {i + 1}/{numFrames} rendered in {sw.Elapsed.TotalSeconds:F2} seconds.");
             }
 
-            // If we completed all frames without timing out or dying, it's unstable
             if (string.IsNullOrEmpty(behavior))
             {
                 behavior = "unstable";
             }
 
-            // Create the parent directory of the output directory if it doesn't exist
             string parentDir = Path.GetDirectoryName(Path.GetFullPath(baseOutputPath));
             string behaviorPath = Path.Combine(parentDir, behavior);
             Directory.CreateDirectory(behaviorPath);
 
-            // Generate unique subfolder name
+            // Modify the simulation name to include actual frame count
             string simName = Path.GetFileName(baseOutputPath);
+            simName = $"FRMS{actualFrameCount}_{simName}";
             string newFullOutputPath = Path.Combine(behaviorPath, simName);
             
-            // If the new path already exists, delete it
-            if (Directory.Exists(newFullOutputPath))
+            // Handle duplicate names
+            int version = 1;
+            string baseSimName = simName;
+            while (Directory.Exists(newFullOutputPath))
             {
-                Directory.Delete(newFullOutputPath, true);
+                version++;
+                simName = $"{baseSimName}_v{version}";
+                newFullOutputPath = Path.Combine(behaviorPath, simName);
             }
             
-            // Move the directory
             Directory.Move(fullOutputPath, newFullOutputPath);
             outputDirectory = newFullOutputPath;
 
@@ -309,28 +321,6 @@ namespace Generator3D
         {
             var convolutionValues = new ConcurrentDictionary<Vector3Int, float>();
 
-            // Find the bounds of all alive cells
-            int minX = int.MaxValue, minY = int.MaxValue, minZ = int.MaxValue;
-            int maxX = int.MinValue, maxY = int.MinValue, maxZ = int.MinValue;
-            
-            foreach (var pos in aliveCells.Keys)
-            {
-                minX = Math.Min(minX, pos.x);
-                minY = Math.Min(minY, pos.y);
-                minZ = Math.Min(minZ, pos.z);
-                maxX = Math.Max(maxX, pos.x);
-                maxY = Math.Max(maxY, pos.y);
-                maxZ = Math.Max(maxZ, pos.z);
-            }
-
-            // Expand bounds by kernel radius to include potential new cells
-            minX -= kernelRadius;
-            minY -= kernelRadius;
-            minZ -= kernelRadius;
-            maxX += kernelRadius;
-            maxY += kernelRadius;
-            maxZ += kernelRadius;
-
             // Compute convolution values by scattering contributions from alive cells
             Parallel.ForEach(aliveCells, aliveCellKvp =>
             {
@@ -340,18 +330,11 @@ namespace Generator3D
                 for (int idx = 0; idx < kernelOffsets.Count; idx++)
                 {
                     Vector3Int neighborPos = aliveCellPos + kernelOffsets[idx];
-                    
-                    // Only process if within expanded bounds
-                    if (neighborPos.x >= minX && neighborPos.x <= maxX &&
-                        neighborPos.y >= minY && neighborPos.y <= maxY &&
-                        neighborPos.z >= minZ && neighborPos.z <= maxZ)
-                    {
-                        float kernelValue = kernelValues[idx];
-                        float contribution = aliveCellValue * kernelValue;
+                    float kernelValue = kernelValues[idx];
+                    float contribution = aliveCellValue * kernelValue;
 
-                        // Update convolution value atomically
-                        convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
-                    }
+                    // Update convolution value atomically
+                    convolutionValues.AddOrUpdate(neighborPos, contribution, (key, oldValue) => oldValue + contribution);
                 }
             });
 
