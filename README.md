@@ -37,6 +37,9 @@ simulations.Add(new Simulation
                "--minInitialValue 0.2 " +
                "--maxInitialValue 1.0 " +
                "--growthSteepness 4.0 " +
+               "--startingPoints 1 " +
+               "--randomOffsetRange 90 " +
+               "--maxCellMass 324.0 " +
                "--outputDirectory 2D_Example " +
                "--maxFrameTimeSeconds 2.0"
 });
@@ -45,38 +48,44 @@ simulations.Add(new Simulation
 simulations.Add(new Simulation
 {
     GeneratorPath = generator3DPath,
-    Arguments = "--numFrames 100 " +
-               "--kernelRadius 6 " +
-               "--kernelSigmaMultiplier 0.175 " +
-               "--growthSigmaMultiplier 0.004 " +
-               "--center 0.16 " +
-               "--deltaT 0.1 " +
-               "--startingAreaSize 8 " +
-               "--cellSpawnChance 0.4 " +
-               "--minInitialValue 0.2 " +
-               "--maxInitialValue 1.0 " +
-               "--growthSteepness 4.0 " +
-               "--outputDirectory 3D_Example " +
-               "--maxFrameTimeSeconds 1.5"
+    Arguments = "--numFrames 100 " +               // Total number of simulation frames to generate
+               "--kernelRadius 6 " +               // Size of neighborhood that affects each cell
+               "--kernelSigmaMultiplier 0.175 " +  // Controls spread of kernel function relative to radius
+               "--growthSigmaMultiplier 0.004 " +  // Controls spread of growth function relative to radius
+               "--center 0.16 " +                  // Target density for stable growth (optimal neighborhood sum)
+               "--deltaT 0.1 " +                   // Time step size for simulation updates
+               "--startingAreaSize 8 " +           // Size of initial area where cells can spawn
+               "--cellSpawnChance 0.4 " +          // Probability of spawning a cell in the initial state
+               "--minInitialValue 0.2 " +          // Minimum possible initial cell value
+               "--maxInitialValue 1.0 " +          // Maximum possible initial cell value
+               "--growthSteepness 4.0 " +          // Controls sharpness of growth function response
+               "--startingPoints 2 " +             // Number of initial clusters of cells
+               "--randomOffsetRange 18 " +         // Maximum distance between initial cell clusters
+               "--maxCellMass 1296.0 " +          // Maximum total cell mass before simulation ends
+               "--outputDirectory 3D_Example " +    // Directory where simulation data will be saved
+               "--maxFrameTimeSeconds 1.5"         // Maximum time allowed per frame calculation
 });
 
 // 4D Example
 simulations.Add(new Simulation
 {
     GeneratorPath = generator4DPath,
-    Arguments = "--numFrames 75 " +
-               "--kernelRadius 4 " +
-               "--kernelSigmaMultiplier 0.125 " +
-               "--growthSigmaMultiplier 0.012 " +
-               "--center 0.15 " +
-               "--deltaT 0.1 " +
-               "--startingAreaSize 6 " +
-               "--cellSpawnChance 0.5 " +
-               "--minInitialValue 0.2 " +
-               "--maxInitialValue 1.0 " +
-               "--growthSteepness 4.0 " +
-               "--outputDirectory 4D_Example " +
-               "--maxFrameTimeSeconds 5.0"
+    Arguments = "--numFrames 75 " +                // Total number of simulation frames to generate
+               "--kernelRadius 4 " +               // Size of neighborhood that affects each cell
+               "--kernelSigmaMultiplier 0.125 " +  // Controls spread of kernel function relative to radius
+               "--growthSigmaMultiplier 0.012 " +  // Controls spread of growth function relative to radius
+               "--center 0.15 " +                  // Target density for stable growth (optimal neighborhood sum)
+               "--deltaT 0.1 " +                   // Time step size for simulation updates
+               "--startingAreaSize 6 " +           // Size of initial area where cells can spawn
+               "--cellSpawnChance 0.5 " +          // Probability of spawning a cell in the initial state
+               "--minInitialValue 0.2 " +          // Minimum possible initial cell value
+               "--maxInitialValue 1.0 " +          // Maximum possible initial cell value
+               "--growthSteepness 4.0 " +          // Controls sharpness of growth function response
+               "--startingPoints 3 " +             // Number of initial clusters of cells
+               "--randomOffsetRange 12 " +         // Maximum distance between initial cell clusters
+               "--maxCellMass 256.0 " +           // Maximum total cell mass before simulation ends
+               "--outputDirectory 4D_Example " +    // Directory where simulation data will be saved
+               "--maxFrameTimeSeconds 5.0"         // Maximum time allowed per frame calculation
 });
 ```
 
@@ -111,12 +120,19 @@ When using the Run[2/3/4]DSimulations methods, parameters are randomly generated
 
 ### Output and Visualization
 - Simulations will output data into folders in the `output` directory.
-- Open `viewer.html` in your browser to view and interact with the simulations. Select all the frames you want to include in the render.
+- Open `viewer.html` in your browser to view and interact with the simulations. Click the "Upload Folder" button and select a simulation folder containing frame .json files.
 
 #### Controls:
-- **2D Simulations:** Use scroll wheel to zoom in and out.
-- **3D Simulations:** Use `WASD` for movement, `QE` for vertical adjustments, and mouse for rotation.
-- **4D Simulations:** Same controls as 3D, with additional options to toggle the `W` axis view.
+- **Playback Controls:** Play/Pause, Restart, Previous Frame, Next Frame
+- **2D Simulations:** Use scroll wheel to zoom in and out
+- **3D Simulations:** 
+  - Mouse for camera rotation
+  - Toggle auto-rotation
+  - Cross section view with +/- controls and auto-scan option
+- **4D Simulations:**
+  - Same controls as 3D
+  - W dimension controls (+/-) with auto-scan option
+  - Cross section controls for both 3D and W dimensions
 
 ---
 
@@ -186,11 +202,34 @@ Instead of binary states (0 or 1), cells can take continuous values between 0 an
 ## Results
 
 ### Patterns Observed
-- **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns
-- **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly
-- **Decay:** Patterns that gradually die out, either due to insufficient support from neighbors or overcrowding.
-- **Static Equilibrium:** Patterns that stabilize into fixed shapes, usually as circles/sphere, which do not change over time.
-- **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry.
-- **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life.
-- **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals.
+
+#### [2D Simulation (View at 0:00)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=0)
+#### [3D Simulation (View at 5:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=305)
+#### [4D Simulation (View at 9:29)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=569)
+
+- **Unstable Patterns:** Patterns that change sporadically and unpredictably, exhibiting fluctuating growth and shrinkage rates. These often evolve into one of the other defined patterns. [(View at 1:54)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=114)
+
+- **Explosive Growth:** Rapid and continuous expansion of live cells, usually at the same speed in all directions. The pattern always appears to be growing, with no immediate signs of decay. It spreads evenly and maintains its growth without significant fluctuation. This often results in a chaotic spread, where cells grow uncontrollably, sometimes creating a cellular or dotted appearance with evenly distributed mini-stable points. Some of these points may remain stable, while others morph or shift slowly. [(View at 0:20)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=20)
+  
+  [![Explosive Growth](https://www.tylar.io/assets/images/simulationImages/explosiveGrowth.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=20)
+
+- **Decay:** Patterns that gradually die out, either due to insufficient support from neighbors or overcrowding. [(View at 0:05)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=5)
+  
+  [![Decay](https://www.tylar.io/assets/images/simulationImages/decay.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=5)
+
+- **Static Equilibrium:** Patterns that stabilize into fixed shapes, usually as circles/sphere, which do not change over time. [(View at 3:59)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=239)
+  
+  [![Static Equilibrium](https://www.tylar.io/assets/images/simulationImages/staticEquilibrium.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=239)
+
+- **Oscillating Patterns:** Patterns that pulse or oscillate between states, appearing to expand and contract while maintaining symmetry. [(View at 4:26)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=266)
+  
+  [![Oscillating Patterns](https://www.tylar.io/assets/images/simulationImages/oscillatingPattern.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=266)
+
+- **Gliders:** Moving patterns that traverse the grid in a consistent direction, resembling structures like gliders in Conway's 2D Game of Life. [(View at 4:07)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=247)
+  
+  [![Gliders](https://www.tylar.io/assets/images/simulationImages/gliders.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=247)
+
+- **Rotating Structures:** Patterns that appear to spin or rotate around a central axis, often forming intricate loops and spirals. [(View at 2:47)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=167)
+  
+  [![Rotating Structures](https://www.tylar.io/assets/images/simulationImages/rotatingStructure.PNG)](https://www.tylar.io/assets/videos/SimulationResults.mp4?t=167)
 
